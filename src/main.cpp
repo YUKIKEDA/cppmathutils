@@ -8,12 +8,14 @@
 using namespace linalg;
 using namespace iocsv;
 
+// TODO テストはGoogleTestに移行する
+
 /**
- * @brief tensordot_upper_triangularのテスト
+ * @brief contract_3d_tensor_vector_upper_triangularのテスト
  */
 void test_upper_triangular()
 {
-  std::cout << "=== tensordot_upper_triangularテスト ===" << std::endl;
+  std::cout << "=== contract_3d_tensor_vector_upper_triangularテスト ===" << std::endl;
 
   // サイズ設定
   const size_t K = 90;
@@ -30,7 +32,7 @@ void test_upper_triangular()
   auto start = std::chrono::high_resolution_clock::now();
 
   // 関数呼び出し
-  tensordot_upper_triangular(A, B, Result, K, M, N);
+  contract_3d_tensor_vector_upper_triangular(A, B, Result, K, M, N);
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed = end - start;

@@ -7,6 +7,8 @@
 namespace linalg
 {
 
+  // TODO：一般化したtensordotを実装する
+
   /**
    * @brief (K, M, N) のテンソル A と (K) のベクトル B を縮約し、
    *        (M, N) の行列の上三角部分のみを計算して Result に格納する関数。
@@ -22,7 +24,7 @@ namespace linalg
    * @param N      列数
    */
   template <typename T>
-  void tensordot_upper_triangular(
+  void contract_3d_tensor_vector_upper_triangular(
       const T* A, const T* B, T* Result, size_t K, size_t M, size_t N)
   {
     // 行(i)ごとに並列処理
@@ -63,7 +65,7 @@ namespace linalg
    * @brief std::vector を受け取るオーバーロード（使いやすくするためのラッパー）
    */
   template <typename T>
-  void tensordot_upper_triangular(
+  void contract_3d_tensor_vector_upper_triangular(
       const std::vector<T>& A,
       const std::vector<T>& B,
       std::vector<T>& Result,
@@ -71,7 +73,7 @@ namespace linalg
       size_t M,
       size_t N)
   {
-    tensordot_upper_triangular(A.data(), B.data(), Result.data(), K, M, N);
+    contract_3d_tensor_vector_upper_triangular(A.data(), B.data(), Result.data(), K, M, N);
   }
 
 }  // namespace linalg
