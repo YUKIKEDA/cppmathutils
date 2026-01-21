@@ -1,11 +1,12 @@
-﻿#include "../include/linalg/tensordot.hpp"
-
-#include <chrono>
+﻿#include <chrono>
+#include <iocsv/csv_writer.hpp>
 #include <iomanip>
 #include <iostream>
+#include <linalg/tensordot.hpp>
 #include <vector>
 
 using namespace linalg;
+using namespace iocsv;
 
 /**
  * @brief tensordot_upper_triangularのテスト
@@ -38,6 +39,9 @@ void test_upper_triangular()
             << std::endl;
 
   // 結果確認
+  // 期待値の計算: Result[i][j] = Σ(k=0 to K-1) A[k][i][j] * B[k]
+  // A[k][i][j] = 1.0, B[k] = 0.5 より、各項は 0.5
+  // K=90 なので、合計 = 0.5 × 90 = 45.0
   std::cout << "Result[0][0]: " << Result[0] << " (期待値: 45.0)" << std::endl;
 
   // 下三角部分が0であることを確認
@@ -51,6 +55,17 @@ void test_upper_triangular()
   if (M > 1 && N > 1)
   {
     std::cout << "Result[1][1]: " << Result[1 * N + 1] << " (期待値: 45.0)" << std::endl;
+  }
+
+  // CSV形式で結果を出力
+  std::cout << "結果をCSVファイルに出力中..." << std::endl;
+  if (write_csv(Result, M, N, "result.csv"))
+  {
+    std::cout << "結果を result.csv に出力しました。" << std::endl;
+  }
+  else
+  {
+    std::cerr << "CSVファイルの書き込みに失敗しました。" << std::endl;
   }
 }
 
