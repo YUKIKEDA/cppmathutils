@@ -25,11 +25,24 @@ namespace linalg
    */
   template <typename T>
   void contract_3d_tensor_vector_upper_triangular(
-      const T* A, const T* B, T* Result, size_t K, size_t M, size_t N)
+    const T* A, const T* B, T* Result, size_t K, size_t M, size_t N)
   {
+    // 計算量の見積もり
+    // 上三角はおよそ (M * N / 2) * K 回の積和演算
+    // オーバーフロー防止のため double で概算
+    double estimated_ops = (double)M * (double)N * (double)K * 0.5;
+
+    // 閾値の設定
+    // 最近のCPUなら数万回程度の計算は一瞬なので、
+    // 例えば 10万〜50万演算以下ならシングルスレッドの方が速いことが多いです。
+    // ここでは「200,000演算」を境目にします。環境によって調整してください。
+    const double PARALLEL_THRESHOLD = 200000.0;
+    bool use_parallel = estimated_ops > PARALLEL_THRESHOLD;
+
     // 行(i)ごとに並列処理
     // dynamicスケジュールにより、計算量が多い行(上の方)と少ない行(下の方)の負荷分散を行う
-#pragma omp parallel for schedule(dynamic)
+    // データ量が小さい場合は並列化しない（オーバーヘッドの方が大きいため）
+#pragma omp parallel for schedule(dynamic) if (use_parallel)
     for (std::ptrdiff_t i = 0; i < static_cast<std::ptrdiff_t>(M); ++i)
     {
       // 結果行列の行 i の先頭ポインタ
@@ -66,12 +79,12 @@ namespace linalg
    */
   template <typename T>
   void contract_3d_tensor_vector_upper_triangular(
-      const std::vector<T>& A,
-      const std::vector<T>& B,
-      std::vector<T>& Result,
-      size_t K,
-      size_t M,
-      size_t N)
+    const std::vector<T>& A,
+    const std::vector<T>& B,
+    std::vector<T>& Result,
+    size_t K,
+    size_t M,
+    size_t N)
   {
     contract_3d_tensor_vector_upper_triangular(A.data(), B.data(), Result.data(), K, M, N);
   }

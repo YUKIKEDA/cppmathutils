@@ -18,11 +18,11 @@ namespace iocsv
    * @return 成功した場合true、失敗した場合false
    */
   inline bool write_csv(
-      const std::vector<float>& data,
-      size_t rows,
-      size_t cols,
-      const std::string& filename,
-      int precision = 6)
+    const std::vector<float>& data,
+    size_t rows,
+    size_t cols,
+    const std::string& filename,
+    int precision = 6)
   {
     if (data.size() != rows * cols)
     {
@@ -62,7 +62,7 @@ namespace iocsv
    * @return 成功した場合true、失敗した場合false
    */
   inline bool write_csv_1d(
-      const std::vector<float>& data, const std::string& filename, int precision = 6)
+    const std::vector<float>& data, const std::string& filename, int precision = 6)
   {
     std::ofstream file(filename);
     if (!file.is_open())

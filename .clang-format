@@ -72,6 +72,7 @@ IndentGotoLabels: false
 IndentPPDirectives: AfterHash
 IndentRequiresClause: false
 IndentWidth: 2
+ContinuationIndentWidth: 2
 IndentWrappedFunctionNames: false
 InsertNewlineAtEOF: true
 InsertTrailingCommas: None
