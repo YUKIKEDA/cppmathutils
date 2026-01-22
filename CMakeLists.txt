@@ -50,6 +50,12 @@ enable_testing()
 # GoogleTestをvcpkgから取得
 find_package(GTest REQUIRED)
 
+# Eigenをvcpkgから取得
+find_package(Eigen3 REQUIRED)
+
+# MKLをvcpkgから取得
+find_package(MKL REQUIRED)
+
 # テスト実行可能ファイル
 add_executable(tensordot_test
   tests/linalg/tensordot_test.cpp
@@ -76,6 +82,88 @@ if (MSVC)
   target_compile_options(tensordot_test PRIVATE /W4)
 else()
   target_compile_options(tensordot_test PRIVATE -Wall -Wextra -pedantic)
+endif()
+
+# cholesky_test実行可能ファイル
+add_executable(cholesky_test
+  tests/linalg/cholesky_test.cpp
+)
+
+target_link_libraries(cholesky_test
+  PRIVATE
+    GTest::gtest_main
+    GTest::gtest
+    Eigen3::Eigen
+    MKL::MKL
+)
+
+target_include_directories(cholesky_test
+  PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+# EigenでMKLバックエンドを使用するための定義
+target_compile_definitions(cholesky_test
+  PRIVATE
+    EIGEN_USE_MKL_ALL
+)
+
+# WindowsでMKLのDLLパスを実行時に設定
+if (WIN32)
+  # vcpkgのbinディレクトリからMKLのDLLをコピー（最も確実な方法）
+  if (DEFINED VCPKG_INSTALLED_DIR)
+    set(VCPKG_BIN_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin")
+    if (EXISTS "${VCPKG_BIN_DIR}")
+      # MKLのDLLファイルを検索してコピー
+      file(GLOB MKL_DLLS "${VCPKG_BIN_DIR}/mkl_*.dll")
+      if (MKL_DLLS)
+        # 実行可能ファイルの出力ディレクトリにDLLをコピー
+        add_custom_command(TARGET cholesky_test POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${MKL_DLLS}
+          $<TARGET_FILE_DIR:cholesky_test>
+          COMMENT "Copying MKL DLLs to output directory"
+        )
+      endif()
+      
+      # Visual Studioデバッガー用の環境変数も設定
+      set_target_properties(cholesky_test PROPERTIES
+        VS_DEBUGGER_ENVIRONMENT "PATH=${VCPKG_BIN_DIR};$ENV{PATH}"
+      )
+    endif()
+  endif()
+  
+  # MKLターゲットから直接DLLのパスを取得する方法も試す
+  get_target_property(MKL_LIBRARY_DIR MKL::MKL INTERFACE_LINK_DIRECTORIES)
+  if (MKL_LIBRARY_DIR AND NOT DEFINED VCPKG_INSTALLED_DIR)
+    # DLLは通常libディレクトリの親のbinディレクトリにある
+    get_filename_component(MKL_BIN_DIR "${MKL_LIBRARY_DIR}" DIRECTORY)
+    set(MKL_BIN_DIR "${MKL_BIN_DIR}/bin")
+    if (EXISTS "${MKL_BIN_DIR}")
+      file(GLOB MKL_DLLS "${MKL_BIN_DIR}/mkl_*.dll")
+      if (MKL_DLLS)
+        add_custom_command(TARGET cholesky_test POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${MKL_DLLS}
+          $<TARGET_FILE_DIR:cholesky_test>
+          COMMENT "Copying MKL DLLs to output directory"
+        )
+      endif()
+      set_target_properties(cholesky_test PROPERTIES
+        VS_DEBUGGER_ENVIRONMENT "PATH=${MKL_BIN_DIR};$ENV{PATH}"
+      )
+    endif()
+  endif()
+endif()
+
+# テストを登録
+gtest_discover_tests(cholesky_test)
+
+# コンパイラ固有の設定（cholesky_test用）
+if (MSVC)
+  target_compile_options(cholesky_test PRIVATE /W4)
+else()
+  target_compile_options(cholesky_test PRIVATE -Wall -Wextra -pedantic)
 endif()
 
 # TODO: 必要な場合は、ターゲットをインストールします。

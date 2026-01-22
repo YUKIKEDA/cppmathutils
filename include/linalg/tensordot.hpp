@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cstddef>
 #include <omp.h>
@@ -78,8 +78,7 @@ namespace linalg
    * @brief std::vector を受け取るオーバーロード（使いやすくするためのラッパー）
    */
   template <typename T>
-  void contract_3d_tensor_vector_upper_triangular(
-    const std::vector<T>& A,
+  void contract_3d_tensor_vector_upper_triangular(const std::vector<T>& A,
     const std::vector<T>& B,
     std::vector<T>& Result,
     size_t K,

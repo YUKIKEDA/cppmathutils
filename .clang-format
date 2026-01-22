@@ -53,7 +53,7 @@ BreakBeforeTemplateCloser: false
 BreakBeforeTernaryOperators: true
 BreakBinaryOperations: true
 BreakConstructorInitializers: AfterColon
-BreakFunctionDefinitionParameters: true
+BreakFunctionDefinitionParameters: false
 BreakInheritanceList: BeforeColon
 BreakStringLiterals: true
 BreakTemplateDeclarations: true
