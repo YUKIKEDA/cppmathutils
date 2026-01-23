@@ -11,8 +11,7 @@ namespace linalg
     /**
      * @brief contract_3d_tensor_vector_upper_triangularの基本テスト
      */
-    TEST(
-      Contract3DTensorVectorUpperTriangularTest, BasicTest)
+    TEST(Contract3DTensorVectorUpperTriangularTest, BasicTest)
     {
       const size_t K = 3;
       const size_t M = 4;
@@ -63,8 +62,7 @@ namespace linalg
     /**
      * @brief 小規模データでのテスト（並列化が無効になる場合）
      */
-    TEST(
-      Contract3DTensorVectorUpperTriangularTest, SmallDataTest)
+    TEST(Contract3DTensorVectorUpperTriangularTest, SmallDataTest)
     {
       const size_t K = 2;
       const size_t M = 3;
@@ -92,8 +90,7 @@ namespace linalg
     /**
      * @brief 中規模データでのテスト（並列化が有効になる場合）
      */
-    TEST(
-      Contract3DTensorVectorUpperTriangularTest, MediumDataTest)
+    TEST(Contract3DTensorVectorUpperTriangularTest, MediumDataTest)
     {
       const size_t K = 10;
       const size_t M = 100;
@@ -117,8 +114,7 @@ namespace linalg
     /**
      * @brief 大規模データでのテスト（元のmain.cppと同じサイズ、並列化が有効になる場合）
      */
-    TEST(
-      Contract3DTensorVectorUpperTriangularTest, LargeDataTest)
+    TEST(Contract3DTensorVectorUpperTriangularTest, LargeDataTest)
     {
       const size_t K = 90;
       const size_t M = 5'000;
@@ -138,28 +134,22 @@ namespace linalg
       // いくつかのサンプルポイントをチェック（全要素をチェックするのは時間がかかるため）
       EXPECT_FLOAT_EQ(Result[0], expected) << "Result[0][0] should be 45.0";
       EXPECT_FLOAT_EQ(Result[0 * N + 1], expected) << "Result[0][1] should be 45.0";
-      if (M > 1)
-      {
-        EXPECT_FLOAT_EQ(Result[1 * N + 1], expected) << "Result[1][1] should be 45.0";
-        EXPECT_FLOAT_EQ(Result[1 * N + N - 1], expected)
-          << "Result[1][" << (N - 1) << "] should be 45.0";
-      }
+      // M = 5000なので、M > 1は常に真
+      EXPECT_FLOAT_EQ(Result[1 * N + 1], expected) << "Result[1][1] should be 45.0";
+      EXPECT_FLOAT_EQ(Result[1 * N + N - 1], expected)
+        << "Result[1][" << (N - 1) << "] should be 45.0";
       EXPECT_FLOAT_EQ(Result[(M - 1) * N + (N - 1)], expected)
         << "Result[" << (M - 1) << "][" << (N - 1) << "] should be 45.0";
 
       // 下三角部分が計算されていないことを確認（いくつかのサンプル）
-      if (M > 1)
-      {
-        // Result[1][0]は下三角部分なので、計算されていない（値は不定だが、上三角部分の値とは異なるはず）
-        // ただし、関数内で初期化されていないため、このテストではチェックしない
-      }
+      // Result[1][0]は下三角部分なので、計算されていない（値は不定だが、上三角部分の値とは異なるはず）
+      // ただし、関数内で初期化されていないため、このテストではチェックしない
     }
 
     /**
      * @brief double型でのテスト
      */
-    TEST(
-      Contract3DTensorVectorUpperTriangularTest, DoublePrecisionTest)
+    TEST(Contract3DTensorVectorUpperTriangularTest, DoublePrecisionTest)
     {
       const size_t K = 3;
       const size_t M = 5;
@@ -187,8 +177,7 @@ namespace linalg
     /**
      * @brief 上三角部分のみが計算されることを確認するテスト
      */
-    TEST(
-      Contract3DTensorVectorUpperTriangularTest, UpperTriangularOnlyTest)
+    TEST(Contract3DTensorVectorUpperTriangularTest, UpperTriangularOnlyTest)
     {
       const size_t K = 2;
       const size_t M = 3;

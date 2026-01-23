@@ -406,13 +406,26 @@ namespace ml
         }
       }
 
-      T w0_;  // 切片（intercept）、@see <a
-              // href="https://github.com/YUKIKEDA/cppmathutils/blob/master/include/ml/SimpleLinearRegression/README.md#parameter-estimation-formulas">Parameter
-              // Estimation Formulas</a>
-      T w1_;  // 傾き（slope）、@see <a
-              // href="https://github.com/YUKIKEDA/cppmathutils/blob/master/include/ml/SimpleLinearRegression/README.md#parameter-estimation-formulas">Parameter
-              // Estimation Formulas</a>
-      bool fitted_;  // フィッティング済みかどうか
+      /**
+       * @brief 切片（intercept）
+       * @see <a
+       * href="https://github.com/YUKIKEDA/cppmathutils/blob/master/include/ml/SimpleLinearRegression/README.md#parameter-estimation-formulas">Parameter
+       * Estimation Formulas</a>
+       */
+      T w0_;
+
+      /**
+       * @brief 傾き（slope）
+       * @see <a
+       * href="https://github.com/YUKIKEDA/cppmathutils/blob/master/include/ml/SimpleLinearRegression/README.md#parameter-estimation-formulas">Parameter
+       * Estimation Formulas</a>
+       */
+      T w1_;
+
+      /**
+       * @brief フィッティング済みかどうか
+       */
+      bool fitted_;
   };
 
 }  // namespace ml
