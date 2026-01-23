@@ -98,6 +98,139 @@ $\hat{\boldsymbol{\beta}} = (\mathbf{X}^T\mathbf{X})^{-1}\mathbf{X}^T\mathbf{y}$
 
 これらの条件が満たされない場合、多重共線性（multicollinearity）の問題が発生します。
 
+## Probabilistic Model and Maximum Likelihood Estimation
+
+最小二乗法による線形回帰は、誤差項が正規分布に従うという確率モデルの最尤推定と数学的に等価です。この等価性を理解することで、線形回帰の統計的基盤を深く理解できます。
+
+### Probabilistic Model
+
+重回帰モデルにおいて、誤差項 $\epsilon_i$ が独立に正規分布 $N(0, \sigma^2)$ に従うと仮定します：
+
+$$\epsilon_i \sim N(0, \sigma^2), \quad i = 1, 2, \ldots, n$$
+
+**補足：確率分布の表記について**
+
+記号 $\sim$ は「従う」を意味し、$\epsilon_i \sim N(0, \sigma^2)$ は「誤差項 $\epsilon_i$ が平均 $0$、分散 $\sigma^2$ の正規分布に従う」ことを表します。$N(0, \sigma^2)$ は正規分布（Normal distribution）を表し、第1引数が平均、第2引数が分散です。この仮定により、誤差項は平均的に $0$ で、ばらつきの大きさが $\sigma^2$ で特徴づけられるランダムな変動を表すと解釈できます。
+
+この仮定により、目的変数 $y_i$ は以下の正規分布に従います：
+
+$$y_i \sim N(\mathbf{x}_i^T\boldsymbol{\beta}, \sigma^2)$$
+
+ここで $\mathbf{x}_i^T = (1, x_{i1}, x_{i2}, \ldots, x_{ip})$ は計画行列 $\mathbf{X}$ の $i$ 行目です。
+
+確率密度関数は以下のように表されます：
+
+$$f(y_i | \mathbf{x}_i, \boldsymbol{\beta}, \sigma^2) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(y_i - \mathbf{x}_i^T\boldsymbol{\beta})^2}{2\sigma^2}\right)$$
+
+**補足：正規分布（ガウス分布）の確率密度関数**
+
+正規分布（Normal distribution）は、ガウス分布（Gaussian distribution）とも呼ばれ、統計学において最も重要な確率分布の一つです。確率密度関数は以下の一般形で定義されます：
+
+$$f(x | \mu, \sigma^2) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(x - \mu)^2}{2\sigma^2}\right)$$
+
+ここで：
+- $\mu$: 平均
+- $\sigma^2$: 分散
+- $\sigma$: 標準偏差
+
+この関数は、平均 $\mu$ を中心として左右対称の釣鐘型（ベルカーブ）の形状を持ちます。分散 $\sigma^2$ が大きいほど、分布は広がり、確率密度は低くなります。
+
+上記の式では、$x = y_i$、$\mu = \mathbf{x}_i^T\boldsymbol{\beta}$（線形モデルの予測値）、$\sigma^2$ は誤差分散として、目的変数 $y_i$ の確率分布を表現しています。この確率密度関数は、観測値 $y_i$ が線形モデルの予測値 $\mathbf{x}_i^T\boldsymbol{\beta}$ の周りに、分散 $\sigma^2$ で正規分布に従って分布することを意味します。
+
+### Likelihood Function
+
+$n$ 個の観測値が独立であると仮定すると、同時確率密度関数（尤度関数）は以下のようになります：
+
+$$L(\boldsymbol{\beta}, \sigma^2 | \mathbf{y}, \mathbf{X}) = \prod_{i=1}^{n} f(y_i | \mathbf{x}_i, \boldsymbol{\beta}, \sigma^2) = \prod_{i=1}^{n} \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(y_i - \mathbf{x}_i^T\boldsymbol{\beta})^2}{2\sigma^2}\right)$$
+
+**補足：尤度関数について**
+
+尤度関数（Likelihood function）は、与えられた観測データ $\mathbf{y}$ と $\mathbf{X}$ に対して、パラメータ $\boldsymbol{\beta}$ と $\sigma^2$ の関数として、そのデータが観測される「尤もらしさ（likelihood）」を表します。
+
+- **確率密度関数との違い**: 確率密度関数 $f(y_i | \mathbf{x}_i, \boldsymbol{\beta}, \sigma^2)$ は、パラメータが固定されたときに、観測値 $y_i$ がどのような確率で出現するかを表します。一方、尤度関数 $L(\boldsymbol{\beta}, \sigma^2 | \mathbf{y}, \mathbf{X})$ は、観測データが固定されたときに、パラメータの値によってデータが観測される尤もらしさがどのように変化するかを表します。
+
+- **独立性の仮定**: $n$ 個の観測値が独立であるという仮定により、同時確率密度関数は各観測値の確率密度関数の積として表されます。これは、各観測値が互いに影響を与えないということを意味します。
+
+- **最尤推定の考え方**: 最尤推定（Maximum Likelihood Estimation, MLE）では、観測されたデータが最も起こりやすい（尤度が最大となる）パラメータの値を推定値として採用します。つまり、実際に観測されたデータが、そのパラメータの値の下で最も高い確率（尤度）で出現すると考えられるパラメータを求める手法です。
+
+### Log-Likelihood Function
+
+計算の簡便性のため、対数尤度関数を考えます：
+
+$$\ell(\boldsymbol{\beta}, \sigma^2 | \mathbf{y}, \mathbf{X}) = \log L(\boldsymbol{\beta}, \sigma^2 | \mathbf{y}, \mathbf{X}) = \sum_{i=1}^{n} \log f(y_i | \mathbf{x}_i, \boldsymbol{\beta}, \sigma^2)$$
+
+**補足：対数尤度関数を使う理由**
+
+対数関数 $\log x$ は単調増加関数（$x_1 < x_2$ ならば $\log x_1 < \log x_2$）であるため、尤度関数 $L(\boldsymbol{\beta}, \sigma^2)$ を最大化するパラメータと、対数尤度関数 $\ell(\boldsymbol{\beta}, \sigma^2) = \log L(\boldsymbol{\beta}, \sigma^2)$ を最大化するパラメータは等価です。つまり：
+
+$$\arg\max_{\boldsymbol{\beta}, \sigma^2} L(\boldsymbol{\beta}, \sigma^2) = \arg\max_{\boldsymbol{\beta}, \sigma^2} \ell(\boldsymbol{\beta}, \sigma^2)$$
+
+対数尤度関数を使う主な利点は以下の通りです：
+
+1. **積から和への変換**: 尤度関数は確率密度関数の積（$\prod$）で表されますが、対数を取ることで和（$\sum$）に変換されます。これにより、微分計算が容易になります。
+
+2. **数値的安定性**: 確率密度関数の値は非常に小さくなることがあり、多数の値を掛け合わせると数値的なアンダーフロー（計算機で表現できないほど小さな値）が発生する可能性があります。対数を取ることで、この問題を回避できます。
+
+3. **計算の簡便性**: 対数関数の性質により、指数関数を含む式の微分が簡単になります。特に、$\log(\exp(x)) = x$ という性質が有用です。
+
+これを展開すると：
+
+$$\ell(\boldsymbol{\beta}, \sigma^2 | \mathbf{y}, \mathbf{X}) = \sum_{i=1}^{n} \left[-\frac{1}{2}\log(2\pi\sigma^2) - \frac{(y_i - \mathbf{x}_i^T\boldsymbol{\beta})^2}{2\sigma^2}\right]$$
+
+$$= -\frac{n}{2}\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum_{i=1}^{n}(y_i - \mathbf{x}_i^T\boldsymbol{\beta})^2$$
+
+$$= -\frac{n}{2}\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2$$
+
+### Maximum Likelihood Estimation
+
+最尤推定では、対数尤度関数を最大化するパラメータ $\boldsymbol{\beta}$ と $\sigma^2$ を求めます。
+
+#### Estimation of $\boldsymbol{\beta}$
+
+対数尤度関数を $\boldsymbol{\beta}$ について最大化する問題を考えます。$\sigma^2$ は固定されていると仮定すると、最大化問題は以下のようになります：
+
+$$\max_{\boldsymbol{\beta}} \ell(\boldsymbol{\beta}, \sigma^2 | \mathbf{y}, \mathbf{X}) = \max_{\boldsymbol{\beta}} \left[-\frac{n}{2}\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2\right]$$
+
+$\sigma^2 > 0$ は定数なので、この最大化問題は以下と等価です：
+
+$$\min_{\boldsymbol{\beta}} \|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2$$
+
+これは**残差平方和（SSR）の最小化**に他なりません。したがって、**最尤推定による $\boldsymbol{\beta}$ の推定値は、最小二乗法による推定値と完全に一致します**：
+
+$$\hat{\boldsymbol{\beta}}_{\text{MLE}} = \hat{\boldsymbol{\beta}}_{\text{OLS}} = (\mathbf{X}^T\mathbf{X})^{-1}\mathbf{X}^T\mathbf{y}$$
+
+#### Estimation of $\sigma^2$
+
+$\boldsymbol{\beta}$ を最尤推定量 $\hat{\boldsymbol{\beta}}$ で置き換えた後、$\sigma^2$ について対数尤度関数を最大化します：
+
+$$\frac{\partial \ell}{\partial \sigma^2} = -\frac{n}{2\sigma^2} + \frac{1}{2(\sigma^2)^2}\|\mathbf{y} - \mathbf{X}\hat{\boldsymbol{\beta}}\|^2 = 0$$
+
+これを解くと：
+
+$$\hat{\sigma}^2_{\text{MLE}} = \frac{1}{n}\|\mathbf{y} - \mathbf{X}\hat{\boldsymbol{\beta}}\|^2 = \frac{SSR}{n}$$
+
+ただし、これは不偏推定量ではありません。不偏推定量は以下のようになります：
+
+$$\hat{\sigma}^2 = \frac{SSR}{n-p-1}$$
+
+### Equivalence of OLS and MLE
+
+以上の議論から、以下の重要な結論が得られます：
+
+1. **誤差項が正規分布に従うという確率モデルの下で、最尤推定は最小二乗法と等価である**
+2. **最小二乗法によるパラメータ推定は、正規分布を誤差に仮定した確率モデルの最尤推定として解釈できる**
+3. **残差平方和の最小化は、対数尤度関数の最大化と数学的に等価である**
+
+この等価性により、最小二乗法は単なる計算手法ではなく、統計的に正当化された推定手法であることが理解できます。また、この確率モデルの枠組みにより、パラメータの信頼区間や仮説検定などの統計的推論が可能になります。
+
+### Summary
+
+- **確率モデル**: $y_i \sim N(\mathbf{x}_i^T\boldsymbol{\beta}, \sigma^2)$
+- **尤度関数**: $L(\boldsymbol{\beta}, \sigma^2) = \prod_{i=1}^{n} \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(y_i - \mathbf{x}_i^T\boldsymbol{\beta})^2}{2\sigma^2}\right)$
+- **対数尤度関数**: $\ell(\boldsymbol{\beta}, \sigma^2) = -\frac{n}{2}\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2$
+- **最尤推定**: $\max_{\boldsymbol{\beta}} \ell(\boldsymbol{\beta}, \sigma^2) \Leftrightarrow \min_{\boldsymbol{\beta}} \|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2$
+- **結論**: 最小二乗法 = 正規分布誤差モデルの最尤推定
+
 ## Evaluation Metrics
 
 ### Coefficient of Determination (R²)
