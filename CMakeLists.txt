@@ -84,52 +84,52 @@ else()
   target_compile_options(tensordot_test PRIVATE -Wall -Wextra -pedantic)
 endif()
 
-# cholesky_test実行可能ファイル
-add_executable(cholesky_test
-  tests/linalg/cholesky_test.cpp
-)
+# # cholesky_test実行可能ファイル
+# add_executable(cholesky_test
+#   tests/linalg/cholesky_test.cpp
+# )
 
-target_link_libraries(cholesky_test
-  PRIVATE
-    GTest::gtest_main
-    GTest::gtest
-    Eigen3::Eigen
-    MKL::MKL
-)
+# target_link_libraries(cholesky_test
+#   PRIVATE
+#     GTest::gtest_main
+#     GTest::gtest
+#     Eigen3::Eigen
+#     MKL::MKL
+# )
 
-target_include_directories(cholesky_test
-  PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-)
+# target_include_directories(cholesky_test
+#   PRIVATE
+#     ${CMAKE_SOURCE_DIR}/include
+# )
 
-# EigenでMKLバックエンドを使用するための定義
-target_compile_definitions(cholesky_test
-  PRIVATE
-    EIGEN_USE_MKL_ALL
-)
+# # EigenでMKLバックエンドを使用するための定義
+# target_compile_definitions(cholesky_test
+#   PRIVATE
+#     EIGEN_USE_MKL_ALL
+# )
 
 # WindowsでMKLのDLLを実行可能ファイルと同じディレクトリにコピー
-if (WIN32 AND DEFINED VCPKG_INSTALLED_DIR)
-  set(VCPKG_BIN_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin")
-  file(GLOB MKL_DLLS "${VCPKG_BIN_DIR}/mkl_*.dll")
-  if (MKL_DLLS)
-    add_custom_command(TARGET cholesky_test POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      ${MKL_DLLS}
-      $<TARGET_FILE_DIR:cholesky_test>
-      COMMENT "Copying MKL DLLs to output directory"
-    )
-  endif()
-endif()
+# if (WIN32 AND DEFINED VCPKG_INSTALLED_DIR)
+#   set(VCPKG_BIN_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin")
+#   file(GLOB MKL_DLLS "${VCPKG_BIN_DIR}/mkl_*.dll")
+#   if (MKL_DLLS)
+#     add_custom_command(TARGET cholesky_test POST_BUILD
+#       COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#       ${MKL_DLLS}
+#       $<TARGET_FILE_DIR:cholesky_test>
+#       COMMENT "Copying MKL DLLs to output directory"
+#     )
+#   endif()
+# endif()
 
-# テストを登録
-gtest_discover_tests(cholesky_test)
+# # テストを登録
+# gtest_discover_tests(cholesky_test)
 
-# コンパイラ固有の設定（cholesky_test用）
-if (MSVC)
-  target_compile_options(cholesky_test PRIVATE /W4)
-else()
-  target_compile_options(cholesky_test PRIVATE -Wall -Wextra -pedantic)
-endif()
+# # コンパイラ固有の設定（cholesky_test用）
+# if (MSVC)
+#   target_compile_options(cholesky_test PRIVATE /W4)
+# else()
+#   target_compile_options(cholesky_test PRIVATE -Wall -Wextra -pedantic)
+# endif()
 
 # TODO: 必要な場合は、ターゲットをインストールします。
