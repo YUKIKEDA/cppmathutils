@@ -5,6 +5,7 @@
 #include <concepts>
 #include <cstddef>
 #include <limits>
+#include <linalg/qr.hpp>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
@@ -486,8 +487,7 @@ namespace ml
         // @see <a
         // href="https://github.com/YUKIKEDA/cppmathutils/blob/master/include/ml/MultipleLinearRegression/README.md#computational-efficiency">Computational
         // Efficiency</a>
-        Eigen::HouseholderQR<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> qr(X_matrix);
-        Eigen::Matrix<T, Eigen::Dynamic, 1> beta_vector = qr.solve(y_vector);
+        Eigen::Matrix<T, Eigen::Dynamic, 1> beta_vector = linalg::qr_solve(X_matrix, y_vector);
 
         // 係数を保存（β_0, β_1, ..., β_p）
         coefficients_.resize(p + 1);
