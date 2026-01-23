@@ -1,12 +1,12 @@
 # 単回帰 (Simple Linear Regression)
 
-## 概要
+## Overview
 
 単回帰（Simple Linear Regression）は、1つの説明変数（独立変数）$x$ を用いて、目的変数（従属変数）$y$ を予測する線形回帰モデルです。2つの変数間の線形関係をモデル化し、最小二乗法を用いて最適なパラメータを推定します。
 
-## 数学的定式化
+## Mathematical Formulation
 
-### モデル
+### Model
 
 単回帰モデルは以下の線形方程式で表されます：
 
@@ -19,7 +19,7 @@ $$y = w_0 + w_1 x + \epsilon$$
 - $w_1$: 傾き（slope）
 - $\epsilon$: 誤差項（残差）
 
-### 推定値
+### Estimated Values
 
 実際のデータから推定されたモデルは以下のように表されます：
 
@@ -27,11 +27,11 @@ $$\hat{y} = \hat{w_0} + \hat{w_1} x$$
 
 ここで $\hat{y}$ は予測値、$\hat{w_0}$ と $\hat{w_1}$ は推定されたパラメータです。
 
-## 最小二乗法によるパラメータ推定
+## Parameter Estimation by Least Squares
 
 最小二乗法（Ordinary Least Squares, OLS）は、残差平方和（Sum of Squared Residuals, SSR）を最小化することでパラメータを推定します。
 
-### 残差平方和
+### Sum of Squared Residuals
 
 真のモデル $y_i = w_0 + w_1 x_i + \epsilon_i$ において、誤差項 $\epsilon_i$ は観測できないため、推定されたパラメータを用いて残差（residual）$e_i$ として推定します：
 
@@ -43,11 +43,11 @@ $$SSR = \sum_{i=1}^{n} e_i^2 = \sum_{i=1}^{n} (y_i - \hat{y}_i)^2 = \sum_{i=1}^{
 
 ここで $n$ はサンプル数、$y_i$ と $x_i$ は $i$ 番目の観測値です。
 
-### パラメータの推定式
+### Parameter Estimation Formulas
 
 残差平方和を最小化することで、以下の正規方程式が得られます：
 
-#### 傾きの推定値
+#### Slope Estimation
 
 $$\hat{w_1} = \frac{\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^{n} (x_i - \bar{x})^2} = \frac{Cov(x, y)}{Var(x)} = \frac{S_{xy}}{S_{xx}}$$
 
@@ -57,11 +57,11 @@ $$\hat{w_1} = \frac{\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^{n
 - $S_{xy} = \sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})$: 共分散の分子
 - $S_{xx} = \sum_{i=1}^{n} (x_i - \bar{x})^2$: $x$ の偏差平方和
 
-#### 切片の推定値
+#### Intercept Estimation
 
 $$\hat{w_0} = \bar{y} - \hat{w_1} \bar{x}$$
 
-### 導出の概要
+### Derivation Overview
 
 パラメータ $w_0$ と $w_1$ について偏微分を計算し、0とおくことで正規方程式が得られます：
 
@@ -71,9 +71,9 @@ $$\frac{\partial SSR}{\partial w_1} = -2\sum_{i=1}^{n}x_i(y_i - w_0 - w_1 x_i) =
 
 これらの連立方程式を解くことで、上記の推定式が導出されます。
 
-## 評価指標
+## Evaluation Metrics
 
-### 決定係数（R²）
+### Coefficient of Determination (R²)
 
 決定係数は、モデルがデータの変動をどれだけ説明できるかを示します：
 
@@ -86,7 +86,7 @@ $$R^2 = 1 - \frac{SSR}{SST} = \frac{SSM}{SST}$$
 
 $R^2$ の範囲は $[0, 1]$ で、1に近いほどモデルの説明力が高いことを示します。
 
-### 相関係数との関係
+### Relationship with Correlation Coefficient
 
 単回帰において、決定係数は相関係数の二乗と等しくなります：
 
@@ -96,19 +96,19 @@ $$R^2 = r_{xy}^2$$
 
 $$r_{xy} = \frac{Cov(x, y)}{\sqrt{Var(x)Var(y)}} = \frac{S_{xy}}{\sqrt{S_{xx} S_{yy}}}$$
 
-### 平均二乗誤差（MSE）
+### Mean Squared Error (MSE)
 
 $$MSE = \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2 = \frac{SSR}{n}$$
 
-### 平均二乗平方根誤差（RMSE）
+### Root Mean Squared Error (RMSE)
 
 $$RMSE = \sqrt{MSE} = \sqrt{\frac{SSR}{n}}$$
 
-### 平均絶対誤差（MAE）
+### Mean Absolute Error (MAE)
 
 $$MAE = \frac{1}{n}\sum_{i=1}^{n}|y_i - \hat{y}_i|$$
 
-## 統計的仮定
+## Statistical Assumptions
 
 単回帰モデルが有効であるためには、以下の仮定が満たされる必要があります：
 
@@ -120,9 +120,9 @@ $$MAE = \frac{1}{n}\sum_{i=1}^{n}|y_i - \hat{y}_i|$$
 
 これらの仮定が満たされない場合、推定結果の信頼性が低下する可能性があります。
 
-## パラメータの統計的推論
+## Statistical Inference for Parameters
 
-### 標準誤差
+### Standard Error
 
 パラメータ推定値の標準誤差は以下のように計算されます：
 
@@ -134,7 +134,7 @@ $$\text{SE}(\hat{w_0}) = \sigma\sqrt{\frac{1}{n} + \frac{\bar{x}^2}{S_{xx}}}$$
 
 $$\hat{\sigma}^2 = \frac{SSR}{n-2} = MSE \cdot \frac{n}{n-2}$$
 
-### t検定
+### t-test
 
 帰無仮説 $H_0: w_1 = 0$ を検定する場合、以下のt統計量を使用します：
 
@@ -142,7 +142,7 @@ $$t = \frac{\hat{w_1}}{\text{SE}(\hat{w_1})}$$
 
 この統計量は自由度 $n-2$ のt分布に従います。
 
-### 信頼区間
+### Confidence Intervals
 
 パラメータの $(1-\alpha)$ 信頼区間は以下のように計算されます：
 
@@ -150,15 +150,15 @@ $$\hat{w_1} \pm t_{\alpha/2, n-2} \cdot \text{SE}(\hat{w_1})$$
 
 $$\hat{w_0} \pm t_{\alpha/2, n-2} \cdot \text{SE}(\hat{w_0})$$
 
-## 予測区間
+## Prediction Intervals
 
 新しい観測値 $x_0$ に対する予測値 $\hat{y}_0$ の信頼区間は：
 
 $$\hat{y}_0 \pm t_{\alpha/2, n-2} \cdot \hat{\sigma} \sqrt{1 + \frac{1}{n} + \frac{(x_0 - \bar{x})^2}{S_{xx}}}$$
 
-## 計算の効率化
+## Computational Efficiency
 
-### 計算式の変形
+### Formula Transformations
 
 実装においては、以下の変形式を使用することで計算効率を向上させることができます：
 
@@ -168,21 +168,21 @@ $$\hat{w_0} = \frac{\sum y_i - \hat{w_1}\sum x_i}{n}$$
 
 ただし、数値的安定性を考慮すると、平均からの偏差を用いた元の式の方が推奨されます。
 
-## 制約と限界
+## Limitations and Constraints
 
 1. **線形関係の仮定**: 非線形関係には対応できない
 2. **外れ値への敏感性**: 外れ値の影響を受けやすい
 3. **多重共線性**: 単回帰では該当しないが、重回帰への拡張時に問題となる
 4. **因果関係の誤解**: 相関関係と因果関係を混同しないよう注意が必要
 
-## 応用例
+## Application Examples
 
 - 売上と広告費の関係の分析
 - 気温とアイスクリームの売上の関係
 - 学習時間とテストスコアの関係
 - 身長と体重の関係
 
-## 参考文献
+## References
 
 - James, G., et al. (2021). *An Introduction to Statistical Learning*. Springer.
 - Hastie, T., Tibshirani, R., & Friedman, J. (2009). *The Elements of Statistical Learning*. Springer.
