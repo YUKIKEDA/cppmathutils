@@ -56,33 +56,11 @@ find_package(Eigen3 REQUIRED)
 # MKLをvcpkgから取得
 find_package(MKL REQUIRED)
 
-# テスト実行可能ファイル
-add_executable(tensordot_test
-  tests/linalg/tensordot_test.cpp
-)
-
-target_link_libraries(tensordot_test
-  PRIVATE
-    GTest::gtest_main
-    GTest::gtest
-    OpenMP::OpenMP_CXX
-)
-
-target_include_directories(tensordot_test
-  PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-)
-
-# テストを登録
+# GoogleTestのモジュールを読み込む
 include(GoogleTest)
-gtest_discover_tests(tensordot_test)
 
-# コンパイラ固有の設定（テスト用）
-if (MSVC)
-  target_compile_options(tensordot_test PRIVATE /W4)
-else()
-  target_compile_options(tensordot_test PRIVATE -Wall -Wextra -pedantic)
-endif()
+# テストサブディレクトリを追加
+add_subdirectory(tests/linalg)
 
 # # cholesky_test実行可能ファイル
 # add_executable(cholesky_test
