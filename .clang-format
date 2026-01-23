@@ -63,7 +63,7 @@ EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always 
 FixNamespaceComments: true 
 IncludeBlocks: Regroup  
-IndentAccessModifiers: false
+IndentAccessModifiers: true
 IndentCaseBlocks: false
 IndentCaseLabels: true
 IndentExportBlock: false

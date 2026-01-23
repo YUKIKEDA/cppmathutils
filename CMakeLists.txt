@@ -61,6 +61,7 @@ include(GoogleTest)
 
 # テストサブディレクトリを追加
 add_subdirectory(tests/linalg)
+add_subdirectory(tests/ml)
 
 # # cholesky_test実行可能ファイル
 # add_executable(cholesky_test
