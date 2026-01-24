@@ -120,4 +120,50 @@ namespace linalg
     return llt.solve(B);
   }
 
+  /**
+   * @brief コレスキー分解（Cholesky Decomposition）を行い、下三角行列 L を返す
+   *
+   * 正定値行列 A に対して、コレスキー分解 A = LL^T を行い、下三角行列 L を返します。
+   *
+   * 計算量: O(n³)（n は行列のサイズ）
+   *
+   * @tparam T 浮動小数点型（float, double, long double など）
+   * @param A 正定値行列（n × n）
+   * @return 下三角行列 L（n × n、A = LL^T）
+   * @throws std::invalid_argument A が正方行列でない場合
+   * @throws std::runtime_error コレスキー分解が失敗した場合（行列が正定値でない可能性）
+   *
+   * @example
+   * ```cpp
+   * Eigen::MatrixXd A(3, 3);
+   * A << 4, 2, 1,
+   *      2, 5, 2,
+   *      1, 2, 6;
+   * Eigen::MatrixXd L = linalg::cholesky_decompose(A);
+   * ```
+   */
+  template <std::floating_point T>
+  Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> cholesky_decompose(
+    const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& A)
+  {
+    static_assert(std::is_floating_point_v<T>,
+      "T must be a floating-point type (float, double, or long double)");
+
+    if (A.rows() != A.cols())
+    {
+      throw std::invalid_argument("Matrix A must be square");
+    }
+
+    // コレスキー分解: A = LL^T
+    Eigen::LLT<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> llt(A);
+    if (llt.info() != Eigen::Success)
+    {
+      throw std::runtime_error(
+        "Cholesky decomposition failed. Matrix may not be positive definite.");
+    }
+
+    // 下三角行列 L を返す
+    return llt.matrixL();
+  }
+
 }  // namespace linalg
