@@ -24,7 +24,7 @@ $$J(\mathbf{w}) = \|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2 + \lambda\|\mathbf{
 - $\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2$: 残差平方和（Sum of Squared Residuals, SSR）
 - $\lambda\|\mathbf{w}\|^2$: L2正則化項（L2 penalty term）
 - $\lambda \geq 0$: 正則化パラメータ（regularization parameter, ハイパーパラメータ）
-- $\|\mathbf{w}\|^2 = \sum_{j=0}^{p} w_j^2$: パラメータベクトルのL2ノルムの二乗
+- $\|\mathbf{w}\|^2 = \sum_{j=0}^{d} w_j^2$: パラメータベクトルのL2ノルムの二乗（$d$ は説明変数の数）
 
 ### Regularization Parameter
 
@@ -42,16 +42,16 @@ $$J(\mathbf{w}) = (\mathbf{y} - \mathbf{\Phi}\mathbf{w})^T(\mathbf{y} - \mathbf{
 
 ここで：
 - $\mathbf{y}$: 目的変数ベクトル（$n \times 1$）
-- $\mathbf{\Phi}$: 計画行列（design matrix, $n \times (p+1)$）
-- $\mathbf{w}$: パラメータベクトル（$(p+1) \times 1$）
+- $\mathbf{\Phi}$: 計画行列（design matrix, $n \times (d+1)$、$d$ は説明変数の数）
+- $\mathbf{w}$: パラメータベクトル（$(d+1) \times 1$）
 - $\lambda$: 正則化パラメータ（スカラー）
 
 ### Intercept Handling
 
 切片項 $w_0$ を正則化に含めるかどうかは実装によって異なります：
 
-1. **切片項も正則化**: $\lambda\|\mathbf{w}\|^2 = \lambda\sum_{j=0}^{p} w_j^2$
-2. **切片項を除外**: $\lambda\|\mathbf{w}\|^2 = \lambda\sum_{j=1}^{p} w_j^2$（切片項 $w_0$ は正則化しない）
+1. **切片項も正則化**: $\lambda\|\mathbf{w}\|^2 = \lambda\sum_{j=0}^{d} w_j^2$（$d$ は説明変数の数）
+2. **切片項を除外**: $\lambda\|\mathbf{w}\|^2 = \lambda\sum_{j=1}^{d} w_j^2$（切片項 $w_0$ は正則化しない）
 
 一般的には、切片項を正則化から除外することが多いです。これは、切片項はデータの平均的なオフセットを表すため、正則化の対象としない方が自然だからです。
 
@@ -67,7 +67,7 @@ $$\frac{\partial J(\mathbf{w})}{\partial \mathbf{w}} = -2\mathbf{\Phi}^T(\mathbf
 
 $$(\mathbf{\Phi}^T\mathbf{\Phi} + \lambda\mathbf{I})\hat{\mathbf{w}} = \mathbf{\Phi}^T\mathbf{y}$$
 
-ここで $\mathbf{I}$ は $(p+1) \times (p+1)$ の単位行列です。
+ここで $\mathbf{I}$ は $(d+1) \times (d+1)$ の単位行列です（$d$ は説明変数の数）。
 
 ### Parameter Estimation Formula
 
@@ -102,6 +102,343 @@ $$\hat{\mathbf{w}}_{\text{Ridge}} = (\mathbf{\Phi}^T\mathbf{\Phi} + \lambda\math
 ### Uniqueness of Solution
 
 $\lambda > 0$ の場合、$(\mathbf{\Phi}^T\mathbf{\Phi} + \lambda\mathbf{I})$ は常に正定値（positive definite）であり、逆行列が一意に存在します。これは、$\mathbf{\Phi}^T\mathbf{\Phi}$ が特異（singular）であっても、リッジ回帰は解を持つことを意味します。
+
+## Probabilistic Model and Bayesian Derivation
+
+リッジ回帰は、確率モデルの観点から自然に導出されます。パラメータに正規分布の事前分布を仮定したベイズ線形回帰において、最大事後確率（Maximum A Posteriori, MAP）推定を行うと、リッジ回帰の目的関数が自然に導かれます。この導出により、リッジ回帰が単なる正則化手法ではなく、統計的に正当化された推定手法であることが理解できます。
+
+### Probabilistic Model
+
+通常の線形回帰と同様に、誤差項 $\epsilon_i$ が独立に正規分布 $N(0, \sigma^2)$ に従うと仮定します：
+
+$$\epsilon_i \sim N(0, \sigma^2), \quad i = 1, 2, \ldots, n$$
+
+この仮定により、目的変数 $y_i$ は以下の正規分布に従います：
+
+$$y_i \sim N(\mathbf{\phi}_i^T\mathbf{w}, \sigma^2)$$
+
+ここで $\mathbf{\phi}_i^T$ は計画行列 $\mathbf{\Phi}$ の $i$ 行目です。
+
+**補足：目的変数の分布の導出**
+
+線形回帰モデル $y_i = \mathbf{\phi}_i^T\mathbf{w} + \epsilon_i$ において、誤差項 $\epsilon_i \sim N(0, \sigma^2)$ が正規分布に従うため、$y_i$ は確率変数 $\epsilon_i$ の線形変換として表されます。正規分布の性質により、$y_i$ も正規分布に従い、その平均は $\mathbf{\phi}_i^T\mathbf{w}$、分散は $\sigma^2$ となります。
+
+確率密度関数は以下のように表されます：
+
+$$f(y_i | \mathbf{\phi}_i, \mathbf{w}, \sigma^2) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(y_i - \mathbf{\phi}_i^T\mathbf{w})^2}{2\sigma^2}\right)$$
+
+### Likelihood Function
+
+$n$ 個の観測値が独立であると仮定すると、同時確率密度関数（尤度関数）は各観測値の確率密度関数の積として表されます：
+
+$$p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) = \prod_{i=1}^{n} f(y_i | \mathbf{\phi}_i, \mathbf{w}, \sigma^2) = \prod_{i=1}^{n} \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(y_i - \mathbf{\phi}_i^T\mathbf{w})^2}{2\sigma^2}\right)$$
+
+**補足：尤度関数の導出**
+
+独立性の仮定により、$n$ 個の観測値の同時確率密度関数は、各観測値の確率密度関数の積として表されます。これは、各観測値が互いに影響を与えないということを意味します。
+
+積を整理すると：
+
+$$p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) = \left(\frac{1}{\sqrt{2\pi\sigma^2}}\right)^n \exp\left(-\frac{1}{2\sigma^2}\sum_{i=1}^{n}(y_i - \mathbf{\phi}_i^T\mathbf{w})^2\right)$$
+
+$$= \left(\frac{1}{2\pi\sigma^2}\right)^{n/2} \exp\left(-\frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2\right)$$
+
+ここで、$\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2 = \sum_{i=1}^{n}(y_i - \mathbf{\phi}_i^T\mathbf{w})^2$ は残差平方和です。
+
+### Log-Likelihood Function
+
+計算の簡便性のため、対数尤度関数を考えます：
+
+$$\log p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) = \log \left[\left(\frac{1}{2\pi\sigma^2}\right)^{n/2} \exp\left(-\frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2\right)\right]$$
+
+**補足：対数尤度関数の導出**
+
+対数関数の性質 $\log(ab) = \log a + \log b$ と $\log(a^c) = c\log a$、$\log(e^x) = x$ を用いて展開すると：
+
+$$\log p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) = \log \left(\frac{1}{2\pi\sigma^2}\right)^{n/2} + \log \exp\left(-\frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2\right)$$
+
+$$= \frac{n}{2}\log\left(\frac{1}{2\pi\sigma^2}\right) - \frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2$$
+
+$$= \frac{n}{2}\left[\log 1 - \log(2\pi\sigma^2)\right] - \frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2$$
+
+$$= -\frac{n}{2}\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2$$
+
+対数関数は単調増加関数であるため、尤度関数の最大化と対数尤度関数の最大化は等価です。
+
+### Prior Distribution
+
+これまで、最尤推定（Maximum Likelihood Estimation, MLE）の枠組みで、尤度関数 $p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2)$ を最大化することでパラメータ $\mathbf{w}$ を推定してきました。この方法では、パラメータ $\mathbf{w}$ に関する事前知識を一切仮定しません。
+
+#### 最尤推定の限界
+
+対数尤度関数を最大化する最尤推定は、観測データ $\mathbf{y}$ が与えられた下で、そのデータを最もよく説明するパラメータ $\mathbf{w}$ を推定します。しかし、この方法には以下のような問題があります：
+
+1. **過学習（Overfitting）**: パラメータ数が多い場合、訓練データに過度に適合し、汎化性能が低下する可能性があります。特に、観測データ数 $n$ がパラメータ数 $d+1$ に近い、または $n < d+1$ の場合、最尤推定は不安定になります。
+
+2. **多重共線性（Multicollinearity）**: 説明変数間の相関が高い場合、$\mathbf{\Phi}^T\mathbf{\Phi}$ が特異に近くなり、逆行列の計算が不安定になります。この場合、パラメータ推定値の分散が非常に大きくなり、推定値が不安定になります。
+
+3. **事前知識の欠如**: 最尤推定では、パラメータに関する事前知識（例えば、「パラメータは0に近い値であることが期待される」など）を活用できません。
+
+#### ベイジアンアプローチの導入
+
+これらの問題を解決するために、ベイジアンアプローチを導入します。ベイジアンアプローチでは、パラメータ $\mathbf{w}$ を確率変数として扱い、 **事前分布（prior distribution）** $p(\mathbf{w})$ を仮定します。これにより、パラメータに関する事前知識を統計モデルに組み込むことができます。
+
+ベイズの定理により、観測データ $\mathbf{y}$ が与えられた下でのパラメータ $\mathbf{w}$ の**事後分布（posterior distribution）** は、以下のように表されます：
+
+$$p(\mathbf{w} | \mathbf{y}, \mathbf{\Phi}, \sigma^2) = \frac{p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) \cdot p(\mathbf{w})}{p(\mathbf{y} | \mathbf{\Phi}, \sigma^2)}$$
+
+ここで：
+- $p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2)$: 尤度関数（likelihood）
+- $p(\mathbf{w})$: 事前分布（prior distribution）
+- $p(\mathbf{y} | \mathbf{\Phi}, \sigma^2)$: 正規化定数（normalizing constant, エビデンス）
+
+分母の $p(\mathbf{y} | \mathbf{\Phi}, \sigma^2)$ は $\mathbf{w}$ に依存しないため、事後分布の最大化（最大事後確率推定、Maximum A Posteriori, MAP）を考える際には、以下の比例関係が重要です：
+
+$$p(\mathbf{w} | \mathbf{y}, \mathbf{\Phi}, \sigma^2) \propto p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) \cdot p(\mathbf{w})$$
+
+つまり、**事後分布は尤度関数と事前分布の積に比例**します。この関係により、尤度関数を最大化するだけではなく、事前分布も考慮した推定が可能になります。
+
+#### なぜ同時確率を考えるのか
+
+最尤推定では、尤度関数 $p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2)$ のみを最大化します。しかし、ベイジアンアプローチでは、**同時確率** $p(\mathbf{y}, \mathbf{w} | \mathbf{\Phi}, \sigma^2) = p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) \cdot p(\mathbf{w})$ を最大化します。
+
+この違いは重要です：
+
+- **最尤推定**: 観測データ $\mathbf{y}$ が与えられた下で、そのデータを最もよく説明する $\mathbf{w}$ を探します。これは、$p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2)$ を最大化することに対応します。
+
+- **MAP推定**: 観測データ $\mathbf{y}$ と事前知識 $p(\mathbf{w})$ の両方を考慮して、最も妥当な $\mathbf{w}$ を探します。これは、$p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) \cdot p(\mathbf{w})$ を最大化することに対応します。
+
+事前分布 $p(\mathbf{w})$ を導入することで、パラメータが「合理的な範囲」に制約され、過学習や多重共線性の問題を緩和できます。特に、パラメータが0に近い値であることを期待する場合、事前分布として0を中心とした分布を選ぶことで、パラメータの大きさを制約できます。
+
+#### ガウス分布を事前分布として選ぶ理由
+
+リッジ回帰では、パラメータ $\mathbf{w}$ の事前分布として、**多変量正規分布（multivariate normal distribution）** を仮定します：
+
+$$p(\mathbf{w}) = \mathcal{N}(\mathbf{w} | \mathbf{0}, \alpha^{-1}\mathbf{I}) = \left(\frac{\alpha}{2\pi}\right)^{(d+1)/2} \exp\left(-\frac{\alpha}{2}\mathbf{w}^T\mathbf{w}\right)$$
+
+ここで：
+- $\mathbf{0}$: 平均ベクトル（すべての要素が0）
+- $\alpha^{-1}\mathbf{I}$: 共分散行列（$\alpha > 0$ は精度パラメータ、$\mathbf{I}$ は単位行列）
+- $d+1$: パラメータの数（切片項を含む）
+
+> [!NOTE]
+> **多変量正規分布の補足**
+> 
+> 多変量正規分布は、機械学習や統計学において非常に重要な分布です。以下では、1次元のガウス分布から多変量正規分布への導出、周辺化、条件付き分布について説明します。
+> 
+> #### 1次元のガウス分布から多変量正規分布への導出
+> 
+> **1次元のガウス分布（正規分布）**
+> 
+> 1次元の確率変数 $x \in \mathbb{R}$ がガウス分布に従う場合、その確率密度関数は：
+> 
+> $$p(x) = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right) = \mathcal{N}(x | \mu, \sigma^2)$$
+> 
+> ここで、$\mu$ は平均、$\sigma^2$ は分散です。
+> 
+> **多変量正規分布への拡張**
+> 
+> $d$ 次元の確率変数ベクトル $\mathbf{x} = (x_1, x_2, \ldots, x_d)^T \in \mathbb{R}^d$ が多変量正規分布に従う場合、その確率密度関数は：
+> 
+> $$p(\mathbf{x}) = \frac{1}{(2\pi)^{d/2}|\mathbf{\Sigma}|^{1/2}} \exp\left(-\frac{1}{2}(\mathbf{x} - \boldsymbol{\mu})^T\mathbf{\Sigma}^{-1}(\mathbf{x} - \boldsymbol{\mu})\right) = \mathcal{N}(\mathbf{x} | \boldsymbol{\mu}, \mathbf{\Sigma})$$
+> 
+> ここで：
+> - $\boldsymbol{\mu} \in \mathbb{R}^d$: 平均ベクトル
+> - $\mathbf{\Sigma} \in \mathbb{R}^{d \times d}$: 共分散行列（正定値対称行列）
+> - $|\mathbf{\Sigma}|$: 共分散行列の行列式（determinant）
+> 
+> **精度行列（Precision Matrix）**
+> 
+> 多変量正規分布では、共分散行列の逆行列 $\mathbf{\Lambda} = \mathbf{\Sigma}^{-1}$ を**精度行列（precision matrix）** と呼びます。確率密度関数は、精度行列を用いて以下のようにも表すことができます：
+> 
+> $$p(\mathbf{x}) = \frac{|\mathbf{\Lambda}|^{1/2}}{(2\pi)^{d/2}} \exp\left(-\frac{1}{2}(\mathbf{x} - \boldsymbol{\mu})^T\mathbf{\Lambda}(\mathbf{x} - \boldsymbol{\mu})\right)$$
+> 
+> ここで、$|\mathbf{\Lambda}| = |\mathbf{\Sigma}^{-1}| = |\mathbf{\Sigma}|^{-1}$ です。
+> 
+> **精度行列の意味**
+> 
+> 1. **1次元の場合**: 精度は分散の逆数 $\lambda = \sigma^{-2}$ で、精度が高いほど分散が小さく、確率密度が平均の周りに集中します。
+> 
+> 2. **多変量の場合**: 精度行列 $\mathbf{\Lambda}$ の対角要素 $\Lambda_{ii}$ は、$i$ 番目の変数の精度（分散の逆数）を表します。非対角要素 $\Lambda_{ij}$（$i \neq j$）は、変数間の条件付き相関を表します。
+> 
+> 3. **独立性との関係**: 精度行列が対角行列である場合（$\mathbf{\Lambda} = \text{diag}(\lambda_1, \lambda_2, \ldots, \lambda_d)$）、各変数は独立になります。これは、共分散行列が対角行列であることと等価です。
+> 
+> **共分散行列と精度行列の関係**
+> 
+> - $\mathbf{\Lambda} = \mathbf{\Sigma}^{-1}$ および $\mathbf{\Sigma} = \mathbf{\Lambda}^{-1}$
+> - 共分散行列が対角行列 $\mathbf{\Sigma} = \text{diag}(\sigma_1^2, \sigma_2^2, \ldots, \sigma_d^2)$ の場合、精度行列も対角行列 $\mathbf{\Lambda} = \text{diag}(\sigma_1^{-2}, \sigma_2^{-2}, \ldots, \sigma_d^{-2})$ になります。
+> 
+> **リッジ回帰での使用**
+> 
+> リッジ回帰の事前分布 $p(\mathbf{w}) = \mathcal{N}(\mathbf{w} | \mathbf{0}, \alpha^{-1}\mathbf{I})$ では、精度行列は $\mathbf{\Lambda} = \alpha\mathbf{I}$ となります。これは、各パラメータが独立で、精度 $\alpha$ を持つことを意味します。$\alpha$ が大きいほど、パラメータが0に近い値になることを強く期待します。
+> 
+> **導出の考え方**
+> 
+> 多変量正規分布は、以下の2つのアプローチから導出できます：
+> 
+> 1. **独立な1次元ガウス分布の積**: $d$ 個の独立な確率変数 $x_1, x_2, \ldots, x_d$ がそれぞれ $\mathcal{N}(\mu_i, \sigma_i^2)$ に従う場合、同時確率密度関数は各確率密度関数の積になります。共分散行列が対角行列 $\mathbf{\Sigma} = \text{diag}(\sigma_1^2, \sigma_2^2, \ldots, \sigma_d^2)$ の場合、多変量正規分布は独立な1次元ガウス分布の積として表されます。
+> 
+> 2. **線形変換による導出**: 標準多変量正規分布 $\mathbf{z} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$（各成分が独立に標準正規分布に従う）に対して、線形変換 $\mathbf{x} = \mathbf{A}\mathbf{z} + \boldsymbol{\mu}$ を適用すると、$\mathbf{x} \sim \mathcal{N}(\boldsymbol{\mu}, \mathbf{A}\mathbf{A}^T)$ となります。ここで、$\mathbf{A}\mathbf{A}^T = \mathbf{\Sigma}$ とすることで、任意の共分散行列を持つ多変量正規分布が得られます。
+> 
+> **指数部分の解釈**
+> 
+> 1次元の場合の指数部分 $-\frac{(x-\mu)^2}{2\sigma^2}$ は、多変量の場合では $-\frac{1}{2}(\mathbf{x} - \boldsymbol{\mu})^T\mathbf{\Sigma}^{-1}(\mathbf{x} - \boldsymbol{\mu})$ に拡張されます。これは、**マハラノビス距離（Mahalanobis distance）** の二乗に相当します。$\mathbf{\Sigma}$ が対角行列の場合、これは各成分の標準化された距離の二乗和になります。
+> 
+> #### 多変量正規分布の周辺化
+> 
+> **周辺分布の性質**
+> 
+> 多変量正規分布の重要な性質として、**周辺分布（marginal distribution）もガウス分布に従う**ことが挙げられます。
+> 
+> 確率変数ベクトル $\mathbf{x} = (\mathbf{x}_1^T, \mathbf{x}_2^T)^T$ が多変量正規分布に従うとします：
+> 
+> $$\mathbf{x} = \begin{pmatrix} \mathbf{x}_1 \\ \mathbf{x}_2 \end{pmatrix} \sim \mathcal{N}\left(\begin{pmatrix} \boldsymbol{\mu}_1 \\ \boldsymbol{\mu}_2 \end{pmatrix}, \begin{pmatrix} \mathbf{\Sigma}_{11} & \mathbf{\Sigma}_{12} \\ \mathbf{\Sigma}_{21} & \mathbf{\Sigma}_{22} \end{pmatrix}\right)$$
+> 
+> ここで、$\mathbf{x}_1$ と $\mathbf{x}_2$ は部分ベクトル、$\boldsymbol{\mu}_1$ と $\boldsymbol{\mu}_2$ は対応する平均ベクトル、$\mathbf{\Sigma}_{11}$、$\mathbf{\Sigma}_{12}$、$\mathbf{\Sigma}_{21}$、$\mathbf{\Sigma}_{22}$ は共分散行列のブロックです。
+> 
+> **周辺分布の導出**
+> 
+> $\mathbf{x}_1$ の周辺分布は、$\mathbf{x}_2$ について積分することで得られます：
+> 
+> $$p(\mathbf{x}_1) = \int p(\mathbf{x}_1, \mathbf{x}_2) d\mathbf{x}_2$$
+> 
+> この積分を実行すると、$\mathbf{x}_1$ の周辺分布は以下の多変量正規分布になります：
+> 
+> $$p(\mathbf{x}_1) = \mathcal{N}(\mathbf{x}_1 | \boldsymbol{\mu}_1, \mathbf{\Sigma}_{11})$$
+> 
+> 同様に、$\mathbf{x}_2$ の周辺分布は：
+> 
+> $$p(\mathbf{x}_2) = \mathcal{N}(\mathbf{x}_2 | \boldsymbol{\mu}_2, \mathbf{\Sigma}_{22})$$
+> 
+> **重要な性質**
+> 
+> この性質により、多変量正規分布に従う確率変数の任意の部分集合の周辺分布も、多変量正規分布（1次元の場合は1次元のガウス分布）になります。これは、ベイズ推論において非常に有用な性質です。
+> 
+> #### 多変量正規分布の条件付き分布
+> 
+> **条件付き分布の導出**
+> 
+> $\mathbf{x}_2$ が与えられた下での $\mathbf{x}_1$ の条件付き分布 $p(\mathbf{x}_1 | \mathbf{x}_2)$ も、多変量正規分布になります。これは、多変量正規分布のもう一つの重要な性質です。
+> 
+> 条件付き分布は以下のように表されます：
+> 
+> $$p(\mathbf{x}_1 | \mathbf{x}_2) = \mathcal{N}(\mathbf{x}_1 | \boldsymbol{\mu}_{1|2}, \mathbf{\Sigma}_{1|2})$$
+> 
+> ここで、条件付き平均と条件付き共分散行列は：
+> 
+> $$\boldsymbol{\mu}_{1|2} = \boldsymbol{\mu}_1 + \mathbf{\Sigma}_{12}\mathbf{\Sigma}_{22}^{-1}(\mathbf{x}_2 - \boldsymbol{\mu}_2)$$
+> 
+> $$\mathbf{\Sigma}_{1|2} = \mathbf{\Sigma}_{11} - \mathbf{\Sigma}_{12}\mathbf{\Sigma}_{22}^{-1}\mathbf{\Sigma}_{21}$$
+> 
+> **導出の考え方**
+> 
+> 条件付き分布は、同時分布を周辺分布で割ることで得られます：
+> 
+> $$p(\mathbf{x}_1 | \mathbf{x}_2) = \frac{p(\mathbf{x}_1, \mathbf{x}_2)}{p(\mathbf{x}_2)}$$
+> 
+> 多変量正規分布の場合、この比を計算すると、指数部分の2次形式を完成平方することで、条件付き分布のパラメータが導出されます。具体的には：
+> 
+> 1. 同時分布の指数部分を $\mathbf{x}_1$ について整理
+> 2. $\mathbf{x}_1$ について2次形式を完成平方
+> 3. 完成平方した項から条件付き平均と条件付き共分散行列を読み取る
+> 
+> **条件付き平均の解釈**
+> 
+> 条件付き平均 $\boldsymbol{\mu}_{1|2} = \boldsymbol{\mu}_1 + \mathbf{\Sigma}_{12}\mathbf{\Sigma}_{22}^{-1}(\mathbf{x}_2 - \boldsymbol{\mu}_2)$ は、以下のように解釈できます：
+> 
+> - $\boldsymbol{\mu}_1$: $\mathbf{x}_1$ の無条件平均
+> - $\mathbf{\Sigma}_{12}\mathbf{\Sigma}_{22}^{-1}(\mathbf{x}_2 - \boldsymbol{\mu}_2)$: $\mathbf{x}_2$ の観測値が平均からどれだけ離れているかに基づく補正項
+> 
+> $\mathbf{x}_1$ と $\mathbf{x}_2$ が相関している場合（$\mathbf{\Sigma}_{12} \neq \mathbf{0}$）、$\mathbf{x}_2$ の観測値に基づいて $\mathbf{x}_1$ の期待値が更新されます。
+> 
+> **条件付き共分散行列の解釈**
+> 
+> 条件付き共分散行列 $\mathbf{\Sigma}_{1|2} = \mathbf{\Sigma}_{11} - \mathbf{\Sigma}_{12}\mathbf{\Sigma}_{22}^{-1}\mathbf{\Sigma}_{21}$ は、$\mathbf{x}_2$ の情報により、$\mathbf{x}_1$ の不確実性が減少することを示しています。$\mathbf{x}_1$ と $\mathbf{x}_2$ の相関が強いほど、条件付き分散は小さくなります。
+> 
+> **独立性との関係**
+> 
+> $\mathbf{x}_1$ と $\mathbf{x}_2$ が独立である場合（$\mathbf{\Sigma}_{12} = \mathbf{0}$）、条件付き分布は周辺分布と一致します：
+> 
+> $$p(\mathbf{x}_1 | \mathbf{x}_2) = \mathcal{N}(\mathbf{x}_1 | \boldsymbol{\mu}_1, \mathbf{\Sigma}_{11}) = p(\mathbf{x}_1)$$
+> 
+> これは、$\mathbf{x}_2$ の情報が $\mathbf{x}_1$ の分布に影響を与えないことを意味します。
+> 
+> #### リッジ回帰への応用
+> 
+> これらの性質は、リッジ回帰のベイズ推論において重要です：
+> 
+> 1. **事後分布の計算**: 尤度関数と事前分布がともにガウス分布であるため、事後分布もガウス分布になります（共役性）。
+> 2. **周辺化**: 不要なパラメータを周辺化することで、必要なパラメータの分布を求めることができます。
+> 3. **条件付き分布**: 一部のパラメータが観測された下で、他のパラメータの分布を更新できます。
+
+**なぜガウス分布を選ぶのか：**
+
+1. **数学的簡潔性**: ガウス分布は、尤度関数もガウス分布であるため、事後分布もガウス分布になります（共役事前分布、conjugate prior）。これにより、解析的な導出が可能になります。
+
+2. **正則化との対応**: ガウス分布の対数を取ると、$\mathbf{w}^T\mathbf{w}$ の項が現れます。これは、リッジ回帰のL2正則化項 $\lambda\|\mathbf{w}\|^2$ と対応します。
+
+3. **解釈の容易さ**: 平均0、等方性の共分散行列（$\alpha^{-1}\mathbf{I}$）を仮定することで、「すべてのパラメータは0に近い値であることが期待される」という事前知識を自然に表現できます。
+
+4. **計算の効率性**: ガウス分布の性質により、MAP推定の計算が効率的に行えます。
+
+**補足：精度パラメータ $\alpha$ と正則化パラメータ $\lambda$ の関係**
+
+後述するように、$\alpha$ と $\lambda$ の間には $\lambda = \alpha\sigma^2$ という関係があります。$\alpha$ が大きいほど、事前分布の分散が小さく（精度が高く）、パラメータが0に近い値になることを強く期待します。
+
+#### 事後分布の導出
+
+ベイズの定理により、事後分布は以下のように表されます：
+
+$$p(\mathbf{w} | \mathbf{y}, \mathbf{\Phi}, \sigma^2) \propto p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) \cdot p(\mathbf{w})$$
+
+尤度関数と事前分布を代入すると：
+
+$$p(\mathbf{w} | \mathbf{y}, \mathbf{\Phi}, \sigma^2) \propto \left(\frac{1}{2\pi\sigma^2}\right)^{n/2} \exp\left(-\frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2\right) \cdot \left(\frac{\alpha}{2\pi}\right)^{(d+1)/2} \exp\left(-\frac{\alpha}{2}\mathbf{w}^T\mathbf{w}\right)$$
+
+定数項を除いて整理すると：
+
+$$p(\mathbf{w} | \mathbf{y}, \mathbf{\Phi}, \sigma^2) \propto \exp\left(-\frac{1}{2\sigma^2}\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2 - \frac{\alpha}{2}\mathbf{w}^T\mathbf{w}\right)$$
+
+$$= \exp\left(-\frac{1}{2\sigma^2}\left[\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2 + \alpha\sigma^2\|\mathbf{w}\|^2\right]\right)$$
+
+ここで、$\lambda = \alpha\sigma^2$ とおくと：
+
+$$p(\mathbf{w} | \mathbf{y}, \mathbf{\Phi}, \sigma^2) \propto \exp\left(-\frac{1}{2\sigma^2}\left[\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2 + \lambda\|\mathbf{w}\|^2\right]\right)$$
+
+#### 最大事後確率（MAP）推定によるリッジ回帰の導出
+
+MAP推定では、事後分布 $p(\mathbf{w} | \mathbf{y}, \mathbf{\Phi}, \sigma^2)$ を最大化する $\mathbf{w}$ を求めます。対数関数は単調増加であるため、対数事後分布を最大化することと等価です：
+
+$$\log p(\mathbf{w} | \mathbf{y}, \mathbf{\Phi}, \sigma^2) \propto -\frac{1}{2\sigma^2}\left[\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2 + \lambda\|\mathbf{w}\|^2\right]$$
+
+定数項を除くと、以下の最大化問題に帰着します：
+
+$$\max_{\mathbf{w}} \left[-\frac{1}{2\sigma^2}\left[\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2 + \lambda\|\mathbf{w}\|^2\right]\right]$$
+
+これは、以下の最小化問題と等価です：
+
+$$\min_{\mathbf{w}} \left[\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2 + \lambda\|\mathbf{w}\|^2\right]$$
+
+これが、まさにリッジ回帰の目的関数です！
+
+**補足：最尤推定との比較**
+
+- **最尤推定**: $\min_{\mathbf{w}} \|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2$（残差平方和のみを最小化）
+- **MAP推定（リッジ回帰）**: $\min_{\mathbf{w}} \left[\|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2 + \lambda\|\mathbf{w}\|^2\right]$（残差平方和と正則化項の和を最小化）
+
+MAP推定では、残差平方和を小さくするだけでなく、パラメータの大きさも制約することで、過学習や多重共線性の問題を緩和します。
+
+#### まとめ
+
+リッジ回帰は、以下の確率モデルから自然に導出されます：
+
+1. **尤度関数**: $p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) = \mathcal{N}(\mathbf{y} | \mathbf{\Phi}\mathbf{w}, \sigma^2\mathbf{I})$（観測データの分布）
+2. **事前分布**: $p(\mathbf{w}) = \mathcal{N}(\mathbf{w} | \mathbf{0}, \alpha^{-1}\mathbf{I})$（パラメータの分布）
+3. **事後分布**: $p(\mathbf{w} | \mathbf{y}, \mathbf{\Phi}, \sigma^2) \propto p(\mathbf{y} | \mathbf{\Phi}, \mathbf{w}, \sigma^2) \cdot p(\mathbf{w})$（ベイズの定理）
+4. **MAP推定**: 事後分布を最大化することで、リッジ回帰の目的関数が導出される
+
+この導出により、リッジ回帰が単なる正則化手法ではなく、統計的に正当化された推定手法であることが理解できます。正則化パラメータ $\lambda$ は、事前分布の精度パラメータ $\alpha$ と観測ノイズの分散 $\sigma^2$ の積として解釈でき、$\lambda = \alpha\sigma^2$ という関係があります。
+
 
 ## Regularization Parameter Selection
 
@@ -319,9 +656,9 @@ $$\text{MSE}(\hat{\mathbf{w}}_{\text{Ridge}}) = \text{Bias}^2 + \text{Var}$$
    - $\hat{\mathbf{w}} = \mathbf{V}(\mathbf{\Sigma}^2 + \lambda\mathbf{I})^{-1}\mathbf{\Sigma}\mathbf{U}^T\mathbf{y}$
 
 4. **計算量**: 
-   - 直接的な逆行列計算: $O((p+1)^3)$
-   - コレスキー分解: $O((p+1)^3)$（ただし、数値的に安定）
-   - SVD分解: $O(n(p+1)^2)$（$n > p+1$ の場合）
+   - 直接的な逆行列計算: $O((d+1)^3)$（$d$ は説明変数の数）
+   - コレスキー分解: $O((d+1)^3)$（ただし、数値的に安定）
+   - SVD分解: $O(n(d+1)^2)$（$n > d+1$ の場合）
 
 ### Efficient Cross-Validation
 
@@ -408,7 +745,7 @@ $$J(\mathbf{w}) = \|\mathbf{y} - \mathbf{\Phi}\mathbf{w}\|^2 + \lambda_1\|\mathb
 リッジ回帰は以下のような場面で使用されます：
 
 1. **多重共線性が存在する場合**: 相関の高い説明変数が多数ある場合
-2. **パラメータ数が多い場合**: $p$ が $n$ に近い、または $p > n$ の場合
+2. **パラメータ数が多い場合**: $d$ が $n$ に近い、または $d > n$ の場合（$d$ は説明変数の数）
 3. **過学習を防ぎたい場合**: 訓練データに過度に適合することを避けたい場合
 4. **予測精度を重視する場合**: パラメータの解釈よりも予測精度を重視する場合
 
