@@ -56,12 +56,16 @@ find_package(Eigen3 REQUIRED)
 # MKLをvcpkgから取得
 find_package(MKL REQUIRED)
 
+# nlohmann-jsonをvcpkgから取得
+find_package(nlohmann_json REQUIRED)
+
 # GoogleTestのモジュールを読み込む
 include(GoogleTest)
 
 # テストサブディレクトリを追加
 add_subdirectory(tests/linalg)
 add_subdirectory(tests/ml)
+add_subdirectory(tests/optimize)
 
 # # cholesky_test実行可能ファイル
 # add_executable(cholesky_test

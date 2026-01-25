@@ -1,0 +1,2 @@
+# AdaptiveMetropolisテストサブディレクトリを追加
+add_subdirectory(AdaptiveMetropolis)

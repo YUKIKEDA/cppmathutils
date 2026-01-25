@@ -4,7 +4,7 @@
 #include <ml/GaussianProcessRegression/gp_regression.hpp>
 #include <ml/GaussianProcessRegression/rbf_kernel.hpp>
 #include <ml/GaussianProcessRegression/white_noise_kernel.hpp>
-#include <optimize/GradientDescent/gradient_descent.hpp>
+#include <optimize/AdaptiveMetropolis/adaptive_metropolis.hpp>
 #include <stdexcept>
 #include <vector>
 
@@ -355,38 +355,6 @@ namespace ml
     }
 
     /**
-     * @brief 最適化を使用したフィッティングのテスト
-     */
-    TEST(GaussianProcessRegressionTest, FitWithOptimization)
-    {
-      auto rbf_kernel = std::make_shared<RBFKernel<double>>(1.0, 1.0);
-      auto white_noise_kernel = std::make_shared<WhiteNoiseKernel<double>>(0.1);
-      auto kernel = std::make_shared<SumKernel<double>>(rbf_kernel, white_noise_kernel);
-
-      GaussianProcessRegression<double> gpr(kernel);
-
-      std::vector<std::vector<double>> X = {{0.0}, {1.0}, {2.0}, {3.0}, {4.0}};
-      std::vector<double> y = {
-        std::sin(0.0), std::sin(1.0), std::sin(2.0), std::sin(3.0), std::sin(4.0)};
-
-      // 勾配降下法を使用した最適化
-      auto optimizer =
-        std::make_shared<optimize::GradientDescentOptimizer<double>>(0.01,  // learning_rate
-          100,                                                              // max_iterations
-          1e-6                                                              // tolerance
-        );
-
-      // 最適化ありでフィッティング
-      gpr.fit(X, y, optimizer);
-
-      EXPECT_TRUE(gpr.is_fitted());
-
-      // 予測が正常に動作することを確認
-      double pred = gpr.predict({1.0});
-      EXPECT_TRUE(std::isfinite(pred));
-    }
-
-    /**
      * @brief デフォルトコンストラクタのテスト
      */
     TEST(GaussianProcessRegressionTest, DefaultConstructor)
@@ -397,6 +365,204 @@ namespace ml
       EXPECT_EQ(gpr.get_n_samples(), 0);
       EXPECT_EQ(gpr.get_input_dim(), 0);
       EXPECT_GT(gpr.get_jitter(), 0.0);
+    }
+
+    /**
+     * @brief Adaptive Metropolisを使ったハイパーパラメータ最適化のテスト
+     */
+    TEST(GaussianProcessRegressionTest, HyperparameterOptimizationWithAdaptiveMetropolis)
+    {
+      // RBFカーネル + ホワイトノイズカーネル
+      auto rbf_kernel = std::make_shared<RBFKernel<double>>(1.0, 1.0);
+      auto white_noise_kernel = std::make_shared<WhiteNoiseKernel<double>>(0.1);
+      auto kernel = std::make_shared<SumKernel<double>>(rbf_kernel, white_noise_kernel);
+
+      GaussianProcessRegression<double> gpr(kernel);
+
+      // テストデータ: y = sin(x) + noise
+      std::vector<std::vector<double>> X = {
+        {0.0}, {0.5}, {1.0}, {1.5}, {2.0}, {2.5}, {3.0}, {3.5}, {4.0}};
+      std::vector<double> y;
+      for (const auto& x : X)
+      {
+        y.push_back(std::sin(x[0]) + 0.1 * (std::rand() / static_cast<double>(RAND_MAX) - 0.5));
+      }
+
+      // Adaptive Metropolisオプティマイザーを作成
+      auto optimizer =
+        std::make_shared<optimize::AdaptiveMetropolis<double>>(5'000,  // max_iterations
+          2'500,                                                       // adaptation_period (burnin)
+          0.0,                                                         // scaling_factor (自動計算)
+          1e-6,                                                        // regularization
+          1e-6,                                                        // convergence_tolerance
+          42                                                           // seed
+        );
+
+      // 最適化前の対数周辺尤度を記録
+      gpr.fit(X, y);  // 最適化なしでフィッティング
+      double lml_before = gpr.log_marginal_likelihood();
+
+      // Adaptive Metropolisでハイパーパラメータを最適化
+      gpr.fit(X, y, optimizer);
+
+      EXPECT_TRUE(gpr.is_fitted());
+
+      // 最適化後の対数周辺尤度を記録
+      double lml_after = gpr.log_marginal_likelihood();
+
+      // 最適化後は対数周辺尤度が改善される（または同等）はず
+      EXPECT_GE(lml_after, lml_before - 1.0);  // 許容誤差を設ける（MCMCの確率的性質のため）
+
+      // 予測が正常に動作することを確認
+      double pred = gpr.predict({1.0});
+      EXPECT_TRUE(std::isfinite(pred));
+      EXPECT_NEAR(pred, std::sin(1.0), 1.0);  // ノイズがあるので許容誤差を大きく
+    }
+
+    /**
+     * @brief Adaptive Metropolisを使ったハイパーパラメータ最適化の詳細テスト
+     * 最適化前後で予測精度が改善されることを確認
+     */
+    TEST(GaussianProcessRegressionTest, HyperparameterOptimizationImprovesPrediction)
+    {
+      // RBFカーネル + ホワイトノイズカーネル
+      auto rbf_kernel = std::make_shared<RBFKernel<double>>(1.0, 1.0);
+      auto white_noise_kernel = std::make_shared<WhiteNoiseKernel<double>>(0.1);
+      auto kernel = std::make_shared<SumKernel<double>>(rbf_kernel, white_noise_kernel);
+
+      GaussianProcessRegression<double> gpr(kernel);
+
+      // より多くのテストデータ
+      std::vector<std::vector<double>> X_train;
+      std::vector<double> y_train;
+      for (double x = 0.0; x <= 4.0; x += 0.2)
+      {
+        X_train.push_back({x});
+        y_train.push_back(std::sin(x) + 0.05 * (std::rand() / static_cast<double>(RAND_MAX) - 0.5));
+      }
+
+      // テストデータ
+      std::vector<std::vector<double>> X_test = {{0.25}, {0.75}, {1.25}, {1.75}, {2.25}};
+      std::vector<double> y_test;
+      for (const auto& x : X_test)
+      {
+        y_test.push_back(std::sin(x[0]));
+      }
+
+      // 最適化なしでフィッティング
+      gpr.fit(X_train, y_train);
+      std::vector<double> predictions_before;
+      for (const auto& x : X_test)
+      {
+        predictions_before.push_back(gpr.predict(x));
+      }
+
+      // MSEを計算
+      double mse_before = 0.0;
+      for (size_t i = 0; i < y_test.size(); ++i)
+      {
+        double diff = predictions_before[i] - y_test[i];
+        mse_before += diff * diff;
+      }
+      mse_before /= y_test.size();
+
+      // Adaptive Metropolisでハイパーパラメータを最適化
+      auto optimizer =
+        std::make_shared<optimize::AdaptiveMetropolis<double>>(3'000,  // max_iterations
+          1'500,                                                       // adaptation_period
+          0.0,                                                         // scaling_factor (自動計算)
+          1e-6,                                                        // regularization
+          1e-6,                                                        // convergence_tolerance
+          42                                                           // seed
+        );
+
+      gpr.fit(X_train, y_train, optimizer);
+
+      // 最適化後の予測
+      std::vector<double> predictions_after;
+      for (const auto& x : X_test)
+      {
+        predictions_after.push_back(gpr.predict(x));
+      }
+
+      // MSEを計算
+      double mse_after = 0.0;
+      for (size_t i = 0; i < y_test.size(); ++i)
+      {
+        double diff = predictions_after[i] - y_test[i];
+        mse_after += diff * diff;
+      }
+      mse_after /= y_test.size();
+
+      // 最適化後はMSEが改善される（または同等）はず
+      // 注意: MCMCは確率的なので、必ずしも改善されるとは限らないが、
+      // 多くの場合改善されるはず
+      EXPECT_GE(mse_before, mse_after - 0.1);  // 許容誤差を設ける
+
+      // すべての予測が有限値であることを確認
+      for (const auto& pred : predictions_after)
+      {
+        EXPECT_TRUE(std::isfinite(pred));
+      }
+    }
+
+    /**
+     * @brief Adaptive Metropolisを使った多次元入力のハイパーパラメータ最適化テスト
+     */
+    TEST(GaussianProcessRegressionTest, HyperparameterOptimizationMultiDimensional)
+    {
+      // RBFカーネル + ホワイトノイズカーネル
+      auto rbf_kernel = std::make_shared<RBFKernel<double>>(1.0, 1.0);
+      auto white_noise_kernel = std::make_shared<WhiteNoiseKernel<double>>(0.1);
+      auto kernel = std::make_shared<SumKernel<double>>(rbf_kernel, white_noise_kernel);
+
+      GaussianProcessRegression<double> gpr(kernel);
+
+      // 2次元入力データ
+      std::vector<std::vector<double>> X = {
+        {0.0, 0.0},
+        {0.5, 0.5},
+        {1.0, 1.0},
+        {1.5, 1.5},
+        {2.0, 2.0}
+      };
+      std::vector<double> y;
+      for (const auto& x : X)
+      {
+        // y = x[0]^2 + x[1]^2 + noise
+        y.push_back(
+          x[0] * x[0] + x[1] * x[1] + 0.1 * (std::rand() / static_cast<double>(RAND_MAX) - 0.5));
+      }
+
+      // Adaptive Metropolisオプティマイザー
+      auto optimizer =
+        std::make_shared<optimize::AdaptiveMetropolis<double>>(4'000,  // max_iterations
+          2'000,                                                       // adaptation_period
+          0.0,                                                         // scaling_factor (自動計算)
+          1e-6,                                                        // regularization
+          1e-6,                                                        // convergence_tolerance
+          42                                                           // seed
+        );
+
+      // 最適化前の対数周辺尤度
+      gpr.fit(X, y);
+      double lml_before = gpr.log_marginal_likelihood();
+
+      // ハイパーパラメータを最適化
+      gpr.fit(X, y, optimizer);
+
+      EXPECT_TRUE(gpr.is_fitted());
+      EXPECT_EQ(gpr.get_input_dim(), 2);
+
+      // 最適化後の対数周辺尤度
+      double lml_after = gpr.log_marginal_likelihood();
+
+      // 最適化後は対数周辺尤度が改善される（または同等）はず
+      EXPECT_GE(lml_after, lml_before - 1.0);
+
+      // 予測が正常に動作することを確認
+      double pred = gpr.predict({1.0, 1.0});
+      EXPECT_TRUE(std::isfinite(pred));
     }
 
   }  // namespace test

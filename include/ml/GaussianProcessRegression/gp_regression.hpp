@@ -815,12 +815,26 @@ namespace ml
           info.param_setters.push_back(
             [rbf](T log_val)
             {
-              rbf->set_sigma_f(std::exp(log_val));
+              // 数値的安定性のため、最小値を保証
+              const T min_value = T(1e-10);
+              T exp_val = std::exp(log_val);
+              if (exp_val < min_value)
+              {
+                exp_val = min_value;
+              }
+              rbf->set_sigma_f(exp_val);
             });
           info.param_setters.push_back(
             [rbf](T log_val)
             {
-              rbf->set_length_scale(std::exp(log_val));
+              // 数値的安定性のため、最小値を保証
+              const T min_value = T(1e-10);
+              T exp_val = std::exp(log_val);
+              if (exp_val < min_value)
+              {
+                exp_val = min_value;
+              }
+              rbf->set_length_scale(exp_val);
             });
           // 境界: 正の値のみ（対数空間では -∞ から +∞）
           info.bounds.push_back({std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max()});
@@ -834,7 +848,14 @@ namespace ml
           info.param_setters.push_back(
             [ard](T log_val)
             {
-              ard->set_sigma_f(std::exp(log_val));
+              // 数値的安定性のため、最小値を保証
+              const T min_value = T(1e-10);
+              T exp_val = std::exp(log_val);
+              if (exp_val < min_value)
+              {
+                exp_val = min_value;
+              }
+              ard->set_sigma_f(exp_val);
             });
           info.bounds.push_back({std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max()});
           const auto& length_scales = ard->get_length_scales();
@@ -844,7 +865,14 @@ namespace ml
             info.param_setters.push_back(
               [ard, d](T log_val)
               {
-                ard->set_length_scale(d, std::exp(log_val));
+                // 数値的安定性のため、最小値を保証
+                const T min_value = T(1e-10);
+                T exp_val = std::exp(log_val);
+                if (exp_val < min_value)
+                {
+                  exp_val = min_value;
+                }
+                ard->set_length_scale(d, exp_val);
               });
             info.bounds.push_back(
               {std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max()});
@@ -858,7 +886,15 @@ namespace ml
           info.param_setters.push_back(
             [wn](T log_val)
             {
-              wn->set_noise_variance(std::exp(log_val));
+              // 数値的安定性のため、最小値を保証
+              // log_valが非常に負の値の場合、exp(log_val)が0になる可能性がある
+              const T min_noise_variance = T(1e-10);
+              T exp_val = std::exp(log_val);
+              if (exp_val < min_noise_variance)
+              {
+                exp_val = min_noise_variance;
+              }
+              wn->set_noise_variance(exp_val);
             });
           info.bounds.push_back({std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max()});
         }

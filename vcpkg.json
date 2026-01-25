@@ -2,6 +2,7 @@
   "dependencies": [
     "eigen3",
     "gtest",
-    "intel-mkl"
+    "intel-mkl",
+    "nlohmann-json"
   ]
 }
