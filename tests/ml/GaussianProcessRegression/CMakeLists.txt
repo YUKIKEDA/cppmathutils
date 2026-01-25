@@ -8,15 +8,19 @@ target_link_libraries(gp_regression_test
     GTest::gtest_main
     GTest::gtest
     Eigen3::Eigen
+    nlohmann_json::nlohmann_json
 )
 
 target_include_directories(gp_regression_test
   PRIVATE
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}
 )
 
-# テストを登録
-gtest_discover_tests(gp_regression_test)
+# テストを登録（作業ディレクトリをプロジェクトルートに設定）
+gtest_discover_tests(gp_regression_test
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
 
 # コンパイラ固有の設定（テスト用）
 if (MSVC)
