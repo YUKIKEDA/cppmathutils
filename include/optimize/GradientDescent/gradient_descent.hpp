@@ -127,6 +127,7 @@ namespace optimize
           T current_objective = objective(result.parameters);
 
           // 収束判定
+          result.iterations = iter + 1;
           if (std::abs(current_objective - prev_objective) < tolerance_)
           {
             result.converged = true;
@@ -135,7 +136,6 @@ namespace optimize
           }
 
           prev_objective = current_objective;
-          result.iterations = iter + 1;
         }
 
         if (!result.converged)

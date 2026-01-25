@@ -4,7 +4,7 @@
 #include <ml/GaussianProcessRegression/gp_regression.hpp>
 #include <ml/GaussianProcessRegression/rbf_kernel.hpp>
 #include <ml/GaussianProcessRegression/white_noise_kernel.hpp>
-#include <optimize/gradient_descent.hpp>
+#include <optimize/GradientDescent/gradient_descent.hpp>
 #include <stdexcept>
 #include <vector>
 
