@@ -1,2 +1,5 @@
 # AdaptiveMetropolisテストサブディレクトリを追加
 add_subdirectory(AdaptiveMetropolis)
+
+# SimulatedAnnealingテストサブディレクトリを追加
+add_subdirectory(SimulatedAnnealing)
