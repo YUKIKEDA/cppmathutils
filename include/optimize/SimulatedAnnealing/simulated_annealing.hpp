@@ -231,16 +231,12 @@ namespace optimize
        * @param objective 目的関数 f(x) -> T
        * @param initial_params 初期パラメータ
        * @param bounds パラメータの境界（オプション、空の場合は制約なし）
-       * @param gradient 勾配関数（未使用、焼きなまし法では勾配は不要）
        * @return 最適化結果
        */
       OptimizationResult<T> minimize(const std::function<T(const std::vector<T>&)>& objective,
         const std::vector<T>& initial_params,
-        const std::vector<std::pair<T, T>>& bounds = {},
-        const std::function<std::vector<T>(const std::vector<T>&)>* gradient = nullptr) override
+        const std::vector<std::pair<T, T>>& bounds = {}) override
       {
-        (void)gradient;  // 未使用
-
         if (initial_params.empty())
         {
           throw std::invalid_argument("initial_params must not be empty");
@@ -290,96 +286,6 @@ namespace optimize
 
               // 最良の状態を更新
               if (proposed_value < best_value)
-              {
-                best_params = proposed_params;
-                best_value = proposed_value;
-              }
-            }
-
-            ++total_iterations;
-          }
-
-          // 温度を更新
-          temperature = update_temperature(temperature);
-        }
-
-        // 収束判定（簡易版：温度が最小温度以下になったか、最大反復回数に達したか）
-        bool converged = (temperature <= min_temperature_);
-
-        OptimizationResult<T> result;
-        result.parameters = best_params;
-        result.objective_value = best_value;
-        result.iterations = total_iterations;
-        result.converged = converged;
-
-        return result;
-      }
-
-      /**
-       * @brief 目的関数を最大化
-       *
-       * @param objective 目的関数 f(x) -> T
-       * @param initial_params 初期パラメータ
-       * @param bounds パラメータの境界（オプション、空の場合は制約なし）
-       * @param gradient 勾配関数（未使用、焼きなまし法では勾配は不要）
-       * @return 最適化結果
-       */
-      OptimizationResult<T> maximize(const std::function<T(const std::vector<T>&)>& objective,
-        const std::vector<T>& initial_params,
-        const std::vector<std::pair<T, T>>& bounds = {},
-        const std::function<std::vector<T>(const std::vector<T>&)>* gradient = nullptr) override
-      {
-        (void)gradient;  // 未使用
-
-        if (initial_params.empty())
-        {
-          throw std::invalid_argument("initial_params must not be empty");
-        }
-
-        // 初期状態
-        std::vector<T> current_params = initial_params;
-        apply_bounds(current_params, bounds);
-        T current_value = objective(current_params);
-
-        // 最良の状態を追跡
-        std::vector<T> best_params = current_params;
-        T best_value = current_value;
-
-        // 温度の初期化
-        T temperature = initial_temperature_;
-
-        // 一様乱数生成器（受理判定用）
-        std::uniform_real_distribution<T> uniform_dist(0.0, 1.0);
-
-        // 焼きなまし法のメインループ
-        size_t total_iterations = 0;
-        size_t accepted = 0;
-
-        while (temperature > min_temperature_ && total_iterations < max_iterations_)
-        {
-          // 各温度でのマルコフ連鎖
-          for (size_t t = 0; t < markov_chain_length_ && total_iterations < max_iterations_; ++t)
-          {
-            // 近傍解を生成
-            std::vector<T> proposed_params = generate_neighbor(current_params, temperature);
-            apply_bounds(proposed_params, bounds);
-
-            // 提案された状態の目的関数値を計算
-            T proposed_value = objective(proposed_params);
-
-            // 受理確率を計算
-            T acceptance_prob =
-              compute_acceptance_probability_maximize(current_value, proposed_value, temperature);
-
-            // 受理/棄却判定
-            if (uniform_dist(rng_) < acceptance_prob)
-            {
-              current_params = proposed_params;
-              current_value = proposed_value;
-              ++accepted;
-
-              // 最良の状態を更新
-              if (proposed_value > best_value)
               {
                 best_params = proposed_params;
                 best_value = proposed_value;

@@ -221,16 +221,12 @@ namespace optimize
        * @param objective 目的関数 f(x) -> T
        * @param initial_params 初期パラメータ
        * @param bounds パラメータの境界（オプション、空の場合は制約なし）
-       * @param gradient 勾配関数（未使用、Adaptive Metropolisでは勾配は不要）
        * @return 最適化結果
        */
       OptimizationResult<T> minimize(const std::function<T(const std::vector<T>&)>& objective,
         const std::vector<T>& initial_params,
-        const std::vector<std::pair<T, T>>& bounds = {},
-        const std::function<std::vector<T>(const std::vector<T>&)>* gradient = nullptr) override
+        const std::vector<std::pair<T, T>>& bounds = {}) override
       {
-        (void)gradient;  // 未使用
-
         if (initial_params.empty())
         {
           throw std::invalid_argument("initial_params must not be empty");
@@ -298,147 +294,6 @@ namespace optimize
 
             // 最良の状態を更新
             if (proposed_value < best_value)
-            {
-              best_params = proposed_params;
-              best_value = proposed_value;
-            }
-          }
-
-          // 適応期間中は共分散行列を更新
-          if (iter <= adaptation_period_)
-          {
-            Eigen::VectorXd sample_eigen =
-              Eigen::Map<const Eigen::VectorXd>(current_params.data(), dim);
-            update_covariance_online(covariance, mean, sample_eigen, iter, s_d);
-          }
-
-          // burnin期間後のサンプルを収集して平均を計算
-          if (iter > adaptation_period_)
-          {
-            Eigen::VectorXd sample_eigen =
-              Eigen::Map<const Eigen::VectorXd>(current_params.data(), dim);
-            sample_sum += sample_eigen;
-            ++sample_count;
-          }
-        }
-
-        // 収束判定（簡易版：受理率を確認）
-        T acceptance_rate = static_cast<T>(accepted) / static_cast<T>(max_iterations_);
-        bool converged = (acceptance_rate > 0.1) && (acceptance_rate < 0.9);
-
-        OptimizationResult<T> result;
-
-        // burnin期間後のサンプル平均を返す（サンプルがある場合）
-        if (sample_count > 0)
-        {
-          Eigen::VectorXd sample_mean = sample_sum / static_cast<T>(sample_count);
-          result.parameters.resize(dim);
-          for (size_t i = 0; i < dim; ++i)
-          {
-            result.parameters[i] = sample_mean(static_cast<Eigen::Index>(i));
-          }
-          // 平均パラメータでの目的関数値を計算
-          result.objective_value = objective(result.parameters);
-        }
-        else
-        {
-          // サンプルがない場合は最良の状態を返す
-          result.parameters = best_params;
-          result.objective_value = best_value;
-        }
-
-        result.iterations = max_iterations_;
-        result.converged = converged;
-
-        return result;
-      }
-
-      /**
-       * @brief 目的関数を最大化
-       *
-       * 目的関数の対数を目標分布として扱い、MCMCサンプリングを実行します。
-       * 最終的に、サンプルの中で目的関数値が最大のものを返します。
-       *
-       * @param objective 目的関数 f(x) -> T
-       * @param initial_params 初期パラメータ
-       * @param bounds パラメータの境界（オプション、空の場合は制約なし）
-       * @param gradient 勾配関数（未使用、Adaptive Metropolisでは勾配は不要）
-       * @return 最適化結果
-       */
-      OptimizationResult<T> maximize(const std::function<T(const std::vector<T>&)>& objective,
-        const std::vector<T>& initial_params,
-        const std::vector<std::pair<T, T>>& bounds = {},
-        const std::function<std::vector<T>(const std::vector<T>&)>* gradient = nullptr) override
-      {
-        (void)gradient;  // 未使用
-
-        if (initial_params.empty())
-        {
-          throw std::invalid_argument("initial_params must not be empty");
-        }
-
-        const size_t dim = initial_params.size();
-
-        // スケーリングパラメータが指定されていない場合、自動計算
-        T s_d = scaling_factor_;
-        if (s_d == T(0))
-        {
-          // s_d = 2.38^2 / d (Roberts et al., 1997)
-          s_d = T(2.38 * 2.38) / static_cast<T>(dim);
-        }
-
-        // 初期状態
-        std::vector<T> current_params = initial_params;
-        apply_bounds(current_params, bounds);
-        T current_value = objective(current_params);
-        T current_log_prob = current_value;  // 対数（最大化の場合）
-
-        // 最良の状態を追跡
-        std::vector<T> best_params = current_params;
-        T best_value = current_value;
-
-        // 共分散行列と平均の初期化
-        Eigen::VectorXd mean = Eigen::Map<const Eigen::VectorXd>(current_params.data(), dim);
-        Eigen::MatrixXd covariance(dim, dim);
-        {
-          Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(dim, dim);
-          covariance = s_d * (regularization_ * identity);
-        }
-
-        // burnin期間後のサンプル平均を計算するための変数
-        Eigen::VectorXd sample_sum = Eigen::VectorXd::Zero(dim);
-        size_t sample_count = 0;
-
-        // 一様乱数生成器（受理判定用）
-        std::uniform_real_distribution<T> uniform_dist(0.0, 1.0);
-
-        // MCMCサンプリング
-        size_t accepted = 0;
-        for (size_t iter = 1; iter <= max_iterations_; ++iter)
-        {
-          // 提案分布から候補を生成
-          Eigen::VectorXd current_eigen =
-            Eigen::Map<const Eigen::VectorXd>(current_params.data(), dim);
-          std::vector<T> proposed_params = sample_multivariate_normal(current_eigen, covariance);
-          apply_bounds(proposed_params, bounds);
-
-          // 提案された状態の目的関数値を計算
-          T proposed_value = objective(proposed_params);
-          T proposed_log_prob = proposed_value;  // 対数
-
-          // 受理確率を計算
-          T acceptance_prob = compute_acceptance_probability(current_log_prob, proposed_log_prob);
-
-          // 受理/棄却判定
-          if (uniform_dist(rng_) < acceptance_prob)
-          {
-            current_params = proposed_params;
-            current_value = proposed_value;
-            current_log_prob = proposed_log_prob;
-            ++accepted;
-
-            // 最良の状態を更新
-            if (proposed_value > best_value)
             {
               best_params = proposed_params;
               best_value = proposed_value;
